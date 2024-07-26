@@ -1,0 +1,31 @@
+Species;Insular;Locality;food availability;presencence of predators;intraspecific competition;Lmax;Tmat;Tmax;Smax;Sr;K;source
+Podarcis bocagei;no;Vigo (Spain);high;high;high;70;16;4;0.8;0.8;-;1, 2, 3, 4
+Podarcis bocagei;no;A Coruña (Spain);high;high;high;64;8;2;0.7;-;1.2;5
+Podarcis carbonelli;yes;Berlenga island (Portugal);low;low;low;70;-;6;0.9;-;-;6
+Podarcis erhardii;no;-;-;-;-;71;11;5;0.8;-;1.1;5, 7
+Podarcis filfolensis;yes;Captivity;-;-;-;86;-;2;0.6;-;-;4, 7
+Podarcis gaigeae;yes;Skyros island (Greece);high;high;high;85;11;5;0.8;-;-;4, 7
+Podarcis hispanica;no;Captivity;-;-;-;74;8;13;0.9;-;-;7
+Podarcis hispanica;no;Asturias (Spain);high;high;high;57;8;1.6;0.5;-;1.2;4, 5
+Podarcis hispanica;no;Salamanca (Spain);high;high;high;68;8;1.6;-;-;1.1;7
+Podarcis hispanica;yes;Cies Island (Spain);high;high;high;68;7;-;-;-;0.9;5, 8
+Podarcis lilfordi;yes;Captivity;-;-;-;81;12;13.9;0.9;-;-;4, 7, 9
+Podarcis lilfordi;yes;Es Curt (Spain);low;low;low;73*;23;18;1;0.8;0.5;This study
+Podarcis lilfordi;yes;Moltona (Spain);high;low;high;75*;-;-;-;0.6;0.7;10
+Podarcis lilfordi;yes;NaGuardia (Spain);high;low;high;68*;-;-;-;0.5;0.7;10
+Podarcis lilfordi;yes;Cabrera (Spain);high;low;high;70;-;-;-;-;0.7;9
+Podarcis liolepis;yes;Columbrets island (Spain);high;high;high;71;9;4;0.8;-;1;4, 5, 11
+Podarcis melisellensis;no;Captivity;-;-;-;74;-;3.9;0.8;-;-;4, 7
+Podarcis milensis;yes;Milos island (Greece);low;high;low;63;14;4;0.8;-;0.5;12, 13
+Podarcis muralis;no;Captivity;-;-;-;80;21;10.1;0.9;-;-;7
+Podarcis muralis;no;Asturias (Spain);high;high;high;65;12;3;0.7;-;1.1;4
+Podarcis muralis;no;Dereköy (Turkey);high;high;high;69*;-;14;0.9;-;0.5+;14
+Podarcis peloponnesiaca;no;Peloponnisos (Greece);high;high;high;82;9;-;-;-;1.2;15
+Podarcis pityusensis;yes;Ibiza island (Spain);high;low;low;82;21;18;1;-;0.7;7
+Podarcis siculus;yes;Licosa island (Italy);low;low;high;>80;-;2.2~;0.6;-;-;16
+Podarcis siculus;no;Captivity;-;-;-;90;12;3.7;0.8;-;-;4, 7
+Podarcis siculus;no;Punta Licosa (Italy);high;high;high;78;-;1.6~;0.5;-;-;16
+Podarcis siculus;no;Filyos (Italy);high;high;high;85*;-;12;0.9;-;0.9;17
+Podarcis tauricus;no;Serbia;high;high;high;70;10;7;0.9;0.5;1.1;18, 19
+Podarcis tauricus;yes;Ionian islands (Greece);high;high;high;74;9;-;-;-;0.9;20
+Podarcis tiliguertus;yes;Captivity;-;-;-;87;-;15;0.9;-;-;7
