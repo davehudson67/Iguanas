@@ -13,7 +13,7 @@ library(coda)
 library(stringr)
 rm(list=ls())
 
-source("ModelComparison_FUNCTIONS.R")
+#source("ModelComparison_FUNCTIONS.R")
 
 ## Load data
 #Allig <- read_csv("DoubleCensored/All_Island_Data/Cfigginsi_Alligatory_Cay.csv")
@@ -263,7 +263,6 @@ AllData <- AllData %>%
   ungroup()
 
 AllData <- as.data.frame(AllData)
-saveRDS(AllData, "AllData.rds")
 
 ## Add Birth date for known aged individuals
 #AllData <- AllData %>%
@@ -294,6 +293,7 @@ AllData <- AllData %>%
   mutate(LastSeen = case_when(any(Status == 1, na.rm = TRUE) ~ max(Year[Status == 1], na.rm = TRUE), TRUE ~ NA_real_)) %>%
   ungroup()
 
+saveRDS(AllData, "DoubleCensored/AllData.rds")
 ###################################################
 #AllData <- arrange(AllData, ID, age)
 
@@ -407,4 +407,6 @@ rm(island_names)
 rm(multi_feed)
 rm(NACols)
 rm(tag_index)
-save.image("igs_AllIslands_CleanDH_290825_obsStart.RData")
+rm(get_mode)
+rm(CH)
+save.image("igs_AllIslands_CleanDH_040925_obsStart.RData")
