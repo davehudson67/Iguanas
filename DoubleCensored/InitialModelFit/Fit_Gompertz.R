@@ -8,19 +8,20 @@ library(mclust)
 library(GGally)
 library(boot)
 library(parallel)
-library(mcmcplots)
+#library(mcmcplots)
 rm(list=ls())
 
 source("ModelComparison_FUNCTIONS.R")
 
 #igs <- read_csv("Data/LeafCayThru2019_CleanOct2020.csv")
 #load("DoubleCensored/InitialModelFit/LeafClayDataImage_only.RData")
-load("igs_AllIslands_CleanDH_190625.RData")
+load("DoubleCensored/igs_AllIslands_CleanDH_040925_obsStart.RData")
 
 ## load custom distributions
 source("Distributions/Dist_GompertzLB.R")
-source("../NIMBLE_Distributions/Dist_GompertzNim.R")
+source("Distributions/Dist_Gompertz.R")
 
+## code for NIMBLE model with censoring
 ## code for NIMBLE model with censoring
 code <- nimbleCode({
   
@@ -29,9 +30,16 @@ code <- nimbleCode({
     
     ## likelihood 
     tB[i] ~ dunif(cintB[i, 1], cintB[i, 2])
-    censoredD[i] ~ dinterval(tD[i], cintD[i])
+    
+    ## Left truncation: must survive to reach time 0 if born before 0.
+    L[i] <- max(0, -tB[i])
+    
+    ## Time-to-death since birth: Exponential, conditional on surviving to L[i].
+    tstar[i] ~ dGompertzLB(a, b, lowerBound = L[i]) 
+    
     tD[i] <- tB[i] + tstar[i]
-    tstar[i] ~ dgompzNim(a, b)
+    
+    censoredD[i] ~ dinterval(tD[i], cintD[i, ])
     
     ## sampling component
     nm[i] <- max(ceiling(tB[i]), 0)
@@ -48,33 +56,53 @@ code <- nimbleCode({
 })
 
 ## set up other components of model
-consts <- list(nind = nind, tMax = ncol(CH))
-data <- list(y = y, cintB = cintB, cintD = cintD[, 2],
-             censoredD = rep(1, nind), 
+consts <- list(nind = nind, tMax = tMax)
+data <- list(y = y, cintB = cintB, cintD = cintD,
+             censoredD = censoredD, 
              tD = tD, tB = tB, tstar = tstar, dind = dind)
 
 ## set initial values
-initFn <- function(model, cintB, cintD) {
-  valid <- 0
-  while(valid == 0) {
+initFn <- function(model, cintB, cintD, censoredD) {
+ # browser()
+  repeat {
     a <- rexp(1)
     b <- rexp(1)
-    mean.p <- runif(1, 0, 1)
-    tBinit <- runif(nrow(cintB), cintB[, 1], cintB[, 2])
-    tstarinit <- cintD[, 2] + rexp(nrow(cintD), 1)
-    tDinit <- tB + tstarinit
+    mean.p <- runif(1)
+    
+    n <- nrow(cintB)
+    tBinit <- runif(n, cintB[,1], cintB[,2])
+    Linit  <- pmax(0, -tBinit)
+    
+    tDinit <- numeric(nrow(cintD))
+    id_cens <- which(censoredD == 2)
+    id_int  <- which(censoredD != 2)
+    
+    if (length(id_cens)) {
+      tDinit[id_cens] <- cintD[id_cens, 2] + rexp(length(id_cens), rate = 1)  # small bump
+    }
+    if (length(id_int)) {
+      tDinit[id_int]  <- runif(length(id_int), cintD[id_int, 1], cintD[id_int, 2])
+    }
+    
+    tiny <- 1e-6
+    tDinit <- pmax(tDinit, tBinit + Linit + tiny)
+    tstarinit <- tDinit - tBinit
+    
+    tstarinit <- pmax(tDinit - tBinit, tiny)
+    
     inits <- list(
-      tD = tDinit,
-      tstar = tstarinit,
-      tB = tBinit,
+      tB      = tBinit,
+      tD      = tDinit,
+      tstar   = tstarinit,
       a = a,
       b = b,
-      mean.p = mean.p
+      mean.p  = mean.p
     )
+    
     model$setInits(inits)
-    valid <- ifelse(!is.finite(model$calculate()), 0, 1)
+    val <- model$calculate()
+    if (is.finite(val)) return(inits)
   }
-  return(inits)
 }
 
 
@@ -87,7 +115,7 @@ cModel <- compileNimble(model)
 ## find list of valid initial values using compiled model
 inits <- list()
 for(k in 1:2) {
-  inits[[k]] <- initFn(cModel, cintB, cintD)
+  inits[[k]] <- initFn(cModel, cintB, cintD, censoredD)
 }
 
 ## try with default sampler
@@ -114,7 +142,7 @@ system.time(run <- runMCMC(cBuilt,
                            samplesAsCodaMCMC = TRUE, 
                            thin = 1))
 
-saveRDS(run, "Samples/G_AllIslands.rds")
+saveRDS(run, "DoubleCensored/InitialModelFit/Samples/G_AllIslands.rds")
 #run <- readRDS("Samples/G_dc_AllIslandsKA.rds")
 #run$summary
 
@@ -188,22 +216,50 @@ as.data.frame(props[mixind == 1, ]) %>%
 
 # Define the log-likelihood function
 loglike <- function(cintB, cintD, y, tMax, a, b, p) {
+  #browser()
   
-  ## sample birth times across all individuals
+  # Sample birth times
   tB <- runif(nrow(cintB), cintB[, 1], cintB[, 2])
+  L <- pmax(0, -tB)
   
-  ## sample death times across all individuals
-  tstar <- map2_dbl(tB, cintD[, 2], function(tB, tM, a, b) {
-    rGompertzLB(1, a, b, tM - tB)
+  # Sample death times from Gompertz truncated at upper bound
+  tstar <- purrr::map2_dbl(tB, cintD[, 2], function(tB_i, tM_i, a, b) {
+    rGompertzLB(1, a, b, tM_i - tB_i)
   }, a = a, b = b)
-  tD <- tstar + tB
   
-  ## sampling component
+  tD <- tB + tstar
+  
+  # Gompertz survival function: S(t) = exp(-a/b * (exp(b*t) - 1))
+  # PDF: f(t) = a * exp(b*t) * exp(-a/b * (exp(b*t) - 1))
+  # Truncated survival: conditional on surviving to L
+  
+  # Log PDF for Gompertz at tstar
+  log_pdf <- log(a) + b * tstar - (a / b) * (exp(b * tstar) - 1)
+  
+  # Log truncation adjustment: log(S(L))
+  log_trunc <- - (a / b) * (exp(b * L) - 1)
+  
+  log_surv <- log_pdf - log_trunc
+  
+  # Censoring component
+  # CDF: F(t) = 1 - S(t)
+  # So P(t ∈ [l, u]) = F(u) - F(l) = S(l) - S(u)
+  S <- function(t) exp(- (a / b) * (exp(b * t) - 1))
+  
+  log_censor <- ifelse(
+    is.finite(cintD[, 2]),
+    log(pmax(S(cintD[, 1] - tB) - S(cintD[, 2] - tB), .Machine$double.eps)),
+    log(pmax(S(cintD[, 1] - tB), .Machine$double.eps))
+  )
+  
+  # Sampling component
   nm <- pmax(ceiling(tB), 0)
   nM <- pmin(floor(tD) - nm, tMax - nm) + 1
   stopifnot(all(nM >= y))
+  
   lpd <- y * log(p) + (nM - y) * log(1 - p)
-  sum(lpd)
+  
+  sum(log_surv + log_censor + lpd)
 }
 
 ## calculate log-likelihoods in parallel
@@ -213,7 +269,7 @@ logimpweight <- mclapply(logimpweight,
                          function(pars, cintB, cintD, y, tMax) {
                            loglike(cintB, cintD, y, tMax, pars[1], pars[2], pars[3])
                          }, cintB = cintB, cintD = cintD,
-                         y = y, tMax = tMax, mc.cores = 8)
+                         y = y, tMax = tMax)
 logimpweight <- reduce(logimpweight, base::c)
 
 ## add prior densities
@@ -227,7 +283,7 @@ logimpweight <- logimpweight -
                                                                               dexp(props[, 2], 1, log = TRUE) +
                                                                               dunif(props[, 3], 0, 1, log = TRUE)))
 
-saveRDS(logimpweight, "DoubleCensored/LImpWeights/logimpweight_g.rds")
+saveRDS(logimpweight, "DoubleCensored/InitialModelFit/LImpWeights/logimpweight_g.rds")
 #logimpweight <- readRDS("DoubleCensored/LImpWeights/logimpweight_G_KA_ALL.rds")
 
 ## final checks
