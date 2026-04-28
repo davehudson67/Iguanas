@@ -348,8 +348,3 @@ run_A <- runMCMC(cMCMC_A,
 )
 
 saveRDS(run_A, "iguana_modelA_RW1cohort_density_feeding_noIslandRE.rds")
-
-run_A$summary
-plot(run_A$samples)
-library(MCMCvis)
-MCMCsummary(run_A$samples)
