@@ -1,0 +1,57 @@
+---
+title: "Maffs"
+author: "TJ McKinley"
+date: "2024-09-11"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Model
+
+Posterior is:
+
+\begin{equation}
+  \pi\left(r, p \mid y, c_B, c_D\right) = \int_{t_B} \int_{t^\ast} \pi\left(r, p, t_B, t^\ast \mid y, c_B, c_D\right) dt_B dt^\ast
+\end{equation}
+where
+\begin{equation}
+  \pi\left(r, p, t_B, t^\ast \mid y, c_B, c_D\right) = \pi\left(y \mid p, t_B, t^\ast\right)\pi\left(t^\ast \mid r, t_B, c_D\right)\pi\left(t_B \mid c_B\right)\pi(r)\pi(p).
+\end{equation}
+Breaking these down:
+\begin{align*}
+  t_{Bi} \mid c_{Bi} &\sim U\left(c_{Bi1}, c_{Bi2}\right),\\
+  t^\ast_i \mid t_{Bi}, c_{Di} &\sim \mbox{Exp}\left(r\right)I\left(c_{Di} - t_{Bi}, \infty\right),\\
+  n_{mi} &= \max\left(\left\lceil t_{Bi}\right\rceil, 0\right),\\
+  n_{Mi} &= \min\left(\left\lfloor t^\ast_i + t_{Bi}\right\rfloor - n_{mi}, T - n_{mi}\right) + 1,\\
+  p_{Di} &= \exp\left(y_i \log(p) + \left(n_{Mi} - y_i\right) \log(1 - p)\right),\\
+  D_i = 1 \mid t_{Bi}, t^\ast_i, p &\sim \mbox{Bernoulli}\left(p_{Di}\right),\\
+  r &\sim \mbox{Exp}(1),\\
+  p &\sim U\left(0, 1\right),
+\end{align*}
+where $T$ is the maximum surveillance time and $I\left(a, b\right)$ denotes truncation of a distribution between $a$ and $b$. (Note that the notation is not quite correct in the full posterior because we are using the dummy $D_i = 1$ variable, but it should be sufficient here).
+
+## Marginal likelihood
+
+The marginal likelihood is:
+
+\begin{align*}
+  \pi\left(y, c_B, c_D\right) &= \int_r \int_p \int_{t_B} \int_{t^\ast} \pi\left(r, p, t_B, t^\ast \mid y, c_B, c_D\right) dt_B dt^\ast dp dr\\
+  &= \int_r \int_p \int_{t_B} \int_{t^\ast} \pi\left(y \mid p, t_B, t^\ast\right)\pi\left(t^\ast \mid r, t_B, c_D\right)\pi\left(t_B \mid r, c_B\right)\pi(r)\pi(p) dt_B dt^\ast dp dr\\
+  &= \int_r \int_p \int_{t_B} \int_{t^\ast} \frac{\pi\left(y \mid p, t_B, t^\ast\right)\pi\left(t^\ast \mid r, t_B, c_D\right)\pi\left(t_B \mid r, c_B\right)\pi(r)\pi(p)}{q\left(t^\ast \mid r, t_B, c_D\right)q\left(t_B \mid r, c_B\right)q\left(r, p \mid y, c_B, c_D\right)}\\
+  & \qquad \times q\left(t^\ast \mid r, t_B, c_D\right)q\left(t_B \mid r, c_B\right)q\left(r, p \mid y, c_B, c_D\right) dt_B dt^\ast dp dr\\
+  &\approx \frac{1}{N} \sum_{j = 1}^N \frac{\pi\left(y \mid p^j, t_B^j, t^{\ast j}\right)\pi\left(t^{\ast j} \mid r^j, t_B^j, c_D\right)\pi\left(t_B^j \mid r^j, c_B\right)\pi\left(r^j\right)\pi\left(p^j\right)}{q\left(t^{\ast j} \mid r^j, t_B^j, c_D\right)q\left(t_B^j \mid r^j, c_B\right)q\left(r^j, p^j \mid y, c_B, c_D\right)}
+\end{align*}
+where $q\left(t^\ast \mid r, t_B, c_D\right)$, $q\left(t_B \mid r, c_B\right)$ and $q\left(r, p \mid y, c_B, c_D\right)$ are some importance distributions. If we choose:
+\begin{align*}
+  q\left(t^\ast \mid r, t_B, c_D\right) &= \pi\left(t^\ast \mid r, t_B, c_D\right),\\
+  q\left(t_B \mid r, c_B\right) &= \pi\left(t_B \mid r, c_B\right),
+\end{align*}
+and $q\left(r, p \mid y, c_B, c_D\right)$ chosen to be an approximation of the posterior, then the estimate becomes
+\begin{equation*}
+  \frac{1}{N} \sum_{j = 1}^N \frac{\pi\left(y \mid p^j, t_B^j, t^{\ast j}\right)\pi\left(r^j\right)\pi\left(p^j\right)}{q\left(r^j, p^j \mid y, c_B, c_D\right)}.
+\end{equation*}
