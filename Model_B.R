@@ -14,7 +14,7 @@ library(nimble)
 setwd("~/Iguanas")
 
 ## ---- Load data ----
-load("igs_AllIslands_CleanDH_160226_obsStart.RData")
+load("igs_AllIslands_CleanDH_280426_obsStart.RData")
 hab_area <- fread("Data/Iguana_islands_habitat.csv") %>% select(islands, Useable)
 
 ## ---- Custom functions/distributions ----
@@ -383,8 +383,3 @@ run_B <- runMCMC(cMCMC_B,
                  progressBar = TRUE)
 
 saveRDS(run_B, "iguana_modelB_RW1cohort_on_a_and_b_density_feeding_noIslandRE.rds")
-
-run_B$summary
-
-library(MCMCvis)
-MCMCsummary(run_B$samples)
