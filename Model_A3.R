@@ -186,3 +186,9 @@ saveRDS(results, "Model_A3_samples_standardSamplers.rds")
 
 # --- 6) OUTPUT ---
 #MCMCsummary(results$samples, params = c("log_a", "log_b", "betaSEX", "betaFEED", "betaAREA", "sigma_drift"))
+
+standard <- readRDS("Model_A3_samples_standardSamplers.rds")
+MCMCsummary(standard$samples)
+
+adjusted <- readRDS("Model_A3_samples_standardSamplers.rds")
+MCMCsummary(standard$samples)
