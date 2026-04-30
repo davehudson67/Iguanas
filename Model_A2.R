@@ -1,10 +1,5 @@
 ## ============================================================
-## MODEL A: Gompertz LB + Density-at-entry + Cohort RW1 on log(a)
-## - species removed
-## - NO persistent island RE (to avoid competing with feeding)
-## - Feeding interpreted as a between-island contrast *conditional on*
-##   (i) density-at-entry and (ii) smooth cohort time drift (RW1)
-## - RJ on: Sex, Feeding, Density
+## IMPROVED MODEL A: Gompertz LB + Cohort RW1 + Blocked Sampling
 ## ============================================================
 library(data.table)
 library(tidyverse)
@@ -155,6 +150,27 @@ cum_effort <- matrix(as.numeric(cum_effort), nrow = n_islands, ncol = tMax + 1)
 n_cohort <- tMax
 
 
+## ============================================================
+## FINAL INTEGRATED MODEL A: Gompertz LB + Cohort RW1
+## ============================================================
+library(nimble)
+library(MCMCvis)
+library(tidyverse)
+library(data.table)
+
+# --- 1. PRE-CALCULATIONS (R Environment) ---
+
+# Ensure IslandStart is a vector of length nind
+is_start_vec <- pmax(1, pmin(tMax, floor(IslandStart_ind) + 1))
+
+# Identify the last occasion each individual was seen (used for inits)
+last_occasion <- apply(CH, 1, function(r) {
+  w <- which(r > 0)
+  if (length(w) == 0) 0L else max(w)
+})
+
+# --- 2. NIMBLE MODEL CODE ---
+
 code_A <- nimbleCode({
   
   for (i in 1:nind) {
@@ -162,13 +178,13 @@ code_A <- nimbleCode({
     ## Latent birth/entry time (occasion units)
     tB[i] ~ dunif(cintB[i, 1], cintB[i, 2])
     
-    ## Entry year index for density lookup and cohort RW1 (1..tMax)
+    ## Discrete cohort index (1..tMax)
     cohort_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
     
-    ## Left truncation lower bound in AGE units
+    ## Left truncation Age (Age at which surveys started on that island)
     L[i] <- max(0, IslandStart_ind[i] - tB[i])
     
-    ## Left-truncated Gompertz age-at-death
+    ## Latent lifespan (Age at death)
     tstar[i] ~ dGompertzLB(amult[i], bmult[i], lowerBound = L[i])
     
     ## Death time
@@ -177,60 +193,50 @@ code_A <- nimbleCode({
     ## Interval / right censoring constraint
     censoredD[i] ~ dinterval(tD[i], cintD[i, ])
     
-    ## Density-at-entry (island x entry-year)
+    ## Density-at-entry lookup (Dynamic indexing)
     dens_entry[i] <- dens_matrix[island[i], cohort_idx[i]]
     
-    ## Linear predictors (Gompertz parameters)
-    ## log(a_i): baseline + covariates + cohort RW1 (centered)
+    ## Gompertz parameters (Anchored RW1: u_cohort[1]=0)
     log(amult[i]) <- log(a) +
       betaSEX[1]  * sex[i]        * zSEX[1] +
       betaFEED[1] * feeding[i]    * zFEED[1] +
       betaDENS[1] * dens_entry[i] * zDENS[1] +
-      u_cohort_center[ cohort_idx[i] ]
+      u_cohort[ cohort_idx[i] ]
     
-    ## log(b_i): covariates only (no RW1 here by default)
     log(bmult[i]) <- log(b) +
       betaSEX[2]  * sex[i]        * zSEX[2] +
       betaFEED[2] * feeding[i]    * zFEED[2] +
       betaDENS[2] * dens_entry[i] * zDENS[2]
     
-    ## Observation model: count of detections out of actual survey opportunities
-    tB_year_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
-    island_start_year_idx[i] <- max(1, min(tMax, floor(IslandStart_ind[i]) + 1))
-    
-    nm_start[i] <- max(tB_year_idx[i], island_start_year_idx[i])
+    ## Observation model indices
+    # When surveys could first see this specific animal
+    nm_start[i] <- max(cohort_idx[i], is_start_vec[i])
     end_year[i] <- max(1, min(tMax, floor(tD[i]) + 1))
     
-    ## effort-based number of opportunities in [nm_start, end_year]
-    nMpos[i] <- cum_effort[ island[i], end_year[i] + 1 ] - cum_effort[ island[i], nm_start[i] ]
+    # Map to cum_effort indices (which are 1..tMax+1)
+    effort_idx_end[i]   <- max(1, min(tMax + 1, end_year[i] + 1))
+    effort_idx_start[i] <- max(1, min(tMax + 1, nm_start[i]))
     
-    ## ensure trials >= successes
-    nMpos_safe[i] <- max(y[i], nMpos[i])
+    # Calculate number of opportunities
+    nMpos_raw[i] <- max(0, cum_effort[ island[i], effort_idx_end[i] ] - 
+                          cum_effort[ island[i], effort_idx_start[i] ])
     
-    ## ones-trick kernel (binomial likelihood up to proportionality)
-    pd_raw[i] <- exp(y[i] * log(mean.p + 1e-10) +
-                       (nMpos_safe[i] - y[i]) * log(1 - mean.p + 1e-10))
-    pd[i] <- min(0.999999, pd_raw[i])
-    dind[i] ~ dbern(pd[i])
+    # Safety check (Ensures trials >= successes for dbin)
+    # y_val is a constant copy of y used to break the graph cycle
+    nMpos_safe[i] <- max(y_val[i], nMpos_raw[i])
+    
+    ## Likelihood
+    y[i] ~ dbin(mean.p, nMpos_safe[i])
   }
   
-  ## ------------------------------------------------------------
-  ## Cohort RW1 on log(a): u_cohort[1..tMax], centered
-  ## ------------------------------------------------------------
-  u_cohort[1] ~ dnorm(0, sd = 2)
+  ## --- Cohort RW1: Anchored ---
+  u_cohort[1] <- 0
   for (t in 2:tMax) {
     u_cohort[t] ~ dnorm(u_cohort[t-1], sd = sigma_year_a)
   }
-  
-  u_bar <- mean(u_cohort[1:tMax])
-  for (t in 1:tMax) {
-    u_cohort_center[t] <- u_cohort[t] - u_bar
-  }
-  
-  ## half-normal-ish prior via truncation (matches your island-sd style)
   sigma_year_a ~ T(dnorm(0, sd = 0.5), 0, )
   
-  ## Fixed effects + RJ indicators (two equations: a and b)
+  ## --- Priors ---
   for (k in 1:2) {
     betaSEX[k]  ~ dnorm(0, sd = 1.5)
     betaFEED[k] ~ dnorm(0, sd = 1.5)
@@ -241,19 +247,21 @@ code_A <- nimbleCode({
     zDENS[k] ~ dbern(0.5)
   }
   
-  ## Baseline Gompertz parameters + detection
   a ~ dexp(1)
   b ~ dexp(1)
   mean.p ~ dunif(0, 1)
 })
 
-## ---- constants + data (Preferred model) ----
+# --- 3. DATA AND CONSTANTS ---
+
 consts_A <- list(
   nind = nind,
   tMax = tMax,
   sex = sex,
   feeding = feeding,
   island = island_idx,
+  y_val = as.numeric(y), # Constant for cycle-breaking
+  is_start_vec = as.numeric(is_start_vec),
   IslandStart_ind = IslandStart_ind
 )
 
@@ -262,100 +270,90 @@ data_A <- list(
   cintB = as.matrix(cintB),
   cintD = as.matrix(cintD),
   censoredD = as.numeric(censoredD),
-  dind = rep(1, nind),
   dens_matrix = dens_matrix,
   cum_effort = cum_effort
 )
 
-## ---- inits ----
+# --- 4. INITIALIZATION FUNCTION ---
+
 init_A <- function() {
-  tiny <- 1e-6
   tBinit <- runif(nind, cintB[,1], cintB[,2])
-  
-  min_death <- pmax(tBinit, IslandStart_ind) + tiny
-  min_death <- pmax(min_death, last_occasion + tiny)
-  
   tDinit <- numeric(nind)
-  id_right <- which(censoredD == 2)
-  id_int   <- which(censoredD != 2)
-  
-  if (length(id_int)) {
-    lo <- pmax(cintD[id_int,1], min_death[id_int])
-    hi <- cintD[id_int,2]
-    tDinit[id_int] <- runif(length(id_int), lo, hi)
+  for(i in 1:nind) {
+    # Ensure death is after birth and after the animal was last seen alive
+    low_limit <- max(tBinit[i], last_occasion[i]) + 0.1
+    if (censoredD[i] == 1) { 
+      tDinit[i] <- runif(1, max(low_limit, cintD[i,1]), cintD[i,2])
+    } else { 
+      tDinit[i] <- low_limit + rexp(1, 0.5)
+    }
   }
-  if (length(id_right)) {
-    tDprop <- cintD[id_right,2] + rexp(length(id_right), rate = 5)
-    tDinit[id_right] <- pmax(tDprop, min_death[id_right])
-  }
-  
   list(
     tB = tBinit,
-    tD = tDinit,
     tstar = tDinit - tBinit,
-    
-    ## helps avoid NA during build + used for RW1 indexing
-    cohort_idx = pmax(1, pmin(tMax, floor(tBinit) + 1)),
-    
-    ## RW1 terms
-    u_cohort = rnorm(tMax, 0, 0.05),
-    sigma_year_a = abs(rnorm(1, 0, 0.2)),
-    
-    a = rexp(1, 10),
-    b = rexp(1, 10),
-    mean.p = runif(1, 0.2, 0.8),
-    
+    u_cohort = c(NA, rnorm(tMax-1, 0, 0.1)),
+    sigma_year_a = 0.1,
+    a = 0.5,
+    b = 0.05,
+    mean.p = 0.2,
     betaSEX  = rnorm(2, 0, 0.1),
     betaFEED = rnorm(2, 0, 0.1),
     betaDENS = rnorm(2, 0, 0.1),
-    
     zSEX  = c(0,0),
     zFEED = c(0,0),
     zDENS = c(0,0)
   )
 }
 
-inits_list_A <- list(init_A(), init_A())
+# --- 5. MCMC CONFIGURATION ---
 
-## ---- build + MCMC ----
-model_A <- nimbleModel(code_A, constants = consts_A, data = data_A, inits = inits_list_A[[1]])
+# Build model
+model_A <- nimbleModel(code_A, constants = consts_A, data = data_A, inits = init_A())
 cModel_A <- compileNimble(model_A)
+
 conf_A <- configureMCMC(model_A,
                         monitors = c("a","b","mean.p",
                                      "betaSEX","betaFEED","betaDENS",
                                      "zSEX","zFEED","zDENS",
-                                     "sigma_year_a","u_cohort_center"),
+                                     "sigma_year_a","u_cohort"),
                         enableWAIC = TRUE)
 
+## --- CRITICAL: BLOCK SAMPLING ---
+# This is the most important part for mixing birth/death.
+cat("Blocking tB and tstar nodes...\n")
+for (i in 1:nind) {
+  conf_A$removeSamplers(paste0('tB[', i, ']'))
+  conf_A$removeSamplers(paste0('tstar[', i, ']'))
+  conf_A$addSampler(target = c(paste0('tB[', i, ']'), paste0('tstar[', i, ']')),
+                    type = "RW_block")
+}
+
+# Add Slice sampling for Gompertz parameters
 conf_A$removeSamplers(c("a","b"))
 conf_A$addSampler(target = c("a","b"), type = "AF_slice")
 
+# Reversible Jump for variable selection
 configureRJ(conf = conf_A,
             targetNodes    = c("betaSEX","betaFEED","betaDENS"),
             indicatorNodes = c("zSEX","zFEED","zDENS"),
-            control = list(mean = 0, scale = 0.5)
-)
+            control = list(mean = 0, scale = 0.5))
 
 mcmc_A  <- buildMCMC(conf_A)
 cMCMC_A <- compileNimble(mcmc_A, project = model_A)
 
+# --- 6. RUN MCMC ---
+
 run_A <- runMCMC(cMCMC_A,
-                 niter = 250000, nburnin = 75000, nchains = 2,
-                 inits = inits_list_A,
+                 niter = 200000, nburnin = 50000, nchains = 2,
+                 inits = list(init_A(), init_A()),
                  setSeed = TRUE,
                  samplesAsCodaMCMC = TRUE,
                  summary = TRUE,
                  WAIC = TRUE,
-                 progressBar = TRUE
-)
+                 progressBar = TRUE)
 
-saveRDS(run_A, "iguana_modelA_RW1cohort_density_feeding_noIslandRE.rds")
 
-run_A <- readRDS("iguana_modelA_RW1cohort_density_feeding_noIslandRE.rds")
-run_A$summary
-mcmcplot(run_A$samples)
 
-MCMCsummary(run_A$)
+# --- 7. RESULTS ---
 
-run_A$WAIC
-run_B$WAIC
+MCMCsummary(run_A$samples, params = c("a","b","mean.p","sigma_year_a","zSEX","zFEED","zDENS"))

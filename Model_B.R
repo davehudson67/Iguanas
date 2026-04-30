@@ -383,3 +383,8 @@ run_B <- runMCMC(cMCMC_B,
                  progressBar = TRUE)
 
 saveRDS(run_B, "iguana_modelB_RW1cohort_on_a_and_b_density_feeding_noIslandRE.rds")
+
+run_B <- readRDS("iguana_modelB_RW1cohort_on_a_and_b_density_feeding_noIslandRE.rds")
+run_B$summary
+library(mcmcplots)
+mcmcplot(run_B$samples)
