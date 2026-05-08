@@ -6,6 +6,7 @@ library(MCMCvis)
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(coda)
 
 # --- 1. DATA LOADING & CLEANING ---
 # Load base data (assuming AllData, CH, cintB, cintD, etc. are in this RData)
@@ -108,14 +109,12 @@ code_Decadal <- nimbleCode({
     log(amult[i]) <- log_a + 
       betaSEX[1]  * sex[i] + 
       betaFEED[1] * feeding[i] +
-      betaAREA[1] * area_z[i] +
-      u_decade[ decade_lookup[ cohort_idx[i] ] ]
+      betaAREA * area_z[i]
     
     ## log(b): Senescence Rate (Rate of Aging)
     log(bmult[i]) <- log_b + 
       betaSEX[2]  * sex[i] + 
-      betaFEED[2] * feeding[i] +
-      betaAREA[2] * area_z[i]
+      betaFEED[2] * feeding[i]
     
     ## Observation Model
     nm_start[i] <- max(cohort_idx[i], is_start_vec[i])
@@ -128,21 +127,21 @@ code_Decadal <- nimbleCode({
   }
   
   ## Decadal Random Walk (u_decade[1] is anchored to 0)
-  u_decade[1] <- 0
-  for (d in 2:n_decades) { 
-    u_decade[d] ~ dnorm(u_decade[d-1], sd = sigma_decade) 
-  }
-  sigma_decade ~ dexp(1)
+  #u_decade[1] <- 0
+  #for (d in 2:n_decades) { 
+  #  u_decade[d] ~ dnorm(u_decade[d-1], sd = sigma_decade) 
+  #}
+  #sigma_decade ~ dexp(1)
   
   ## Priors
   for(k in 1:2) {
     betaSEX[k]  ~ dnorm(0, sd = 1.5)
     betaFEED[k] ~ dnorm(0, sd = 1.5)
-    betaAREA[k] ~ dnorm(0, sd = 1.5)
   }
   log_a ~ dnorm(-8, sd = 5) 
   log_b ~ dnorm(-2, sd = 5) 
   mean.p ~ dunif(0, 1)
+  betaAREA ~ dnorm(0, sd = 1.5)
 })
 
 ## ------------------------------------------------------------
@@ -164,7 +163,7 @@ consts <- list(
 
 data <- list(
   y = as.numeric(y), 
-  cintB = cintB, 
+  cintB = cintB_ultra, 
   cintD = cintD, 
   censoredD = censoredD,
   cum_effort = cum_effort,
@@ -178,7 +177,7 @@ init_Decadal <- function() {
   list(tB = tBinit, tstar = tDinit - tBinit, 
        u_decade = c(NA, rnorm(n_decades-1, 0, 0.1)),
        sigma_decade = 0.1, log_a = -8, log_b = -2, mean.p = 0.2, 
-       betaSEX = c(0,0), betaFEED = c(0,0), betaAREA = c(0,0))
+       betaSEX = c(0,0), betaFEED = c(0,0), betaAREA = 0)
 }
 
 # Build and Compile Model
@@ -187,27 +186,34 @@ cModel <- compileNimble(model)
 
 # Configure MCMC
 conf <- configureMCMC(model, monitors = c("log_a", "log_b", "mean.p", "betaSEX", 
-                                          "betaFEED", "betaAREA", "sigma_decade", "u_decade"))
+                                          "betaFEED", "betaAREA"))
 
 # --- SAMPLER OPTIMIZATION ---
 # 1. Block individuals
 for (i in 1:nind) {
   conf$removeSamplers(paste0('tB[', i, ']'))
   conf$removeSamplers(paste0('tstar[', i, ']'))
-  conf$addSampler(target = c(paste0('tB[', i, ']'), paste0('tstar[', i, ']')), type = "rw_block")
+  conf$addSampler(target = c(paste0('tB[', i, ']'), paste0('tstar[', i, ']')), type = "AF_slice")
 }
 
 # 2. Block Intercept with the Decadal Random Walk
-conf$removeSamplers(c("log_a", "u_decade"))
-conf$addSampler(target = c("log_a", "u_decade[2:n_decades]"), type = "rw_block")
+#conf$removeSamplers(c("log_a", "u_decade"))
+#conf$addSampler(target = c("log_a", "u_decade[2:n_decades]"), type = "AF_slice")
 
 # 3. Use AF_slice for global parameters
-conf$removeSamplers(c("log_b", "betaSEX", "betaFEED", "betaAREA"))
-conf$addSampler(target = c("log_b", "betaSEX", "betaFEED", "betaAREA"), type = "AF_slice")
+conf$removeSamplers(c("log_a", "betaSEX[1]", "betaFEED[1]", "betaAREA[1]"))
+conf$addSampler(target = c("log_a", "betaSEX[1]", "betaFEED[1]", "betaAREA"), type = "AF_slice")
+conf$removeSamplers(c("log_b", "betaSEX[2]", "betaFEED[2]", "betaAREA[2]"))
+conf$addSampler(target = c("log_b", "betaSEX[2]", "betaFEED[2]"), type = "AF_slice")
 
 # Compile and Run
 cMCMC <- compileNimble(buildMCMC(conf), project = model)
-results <- runMCMC(cMCMC, niter = 250000, nburnin = 100000, nchains = 2, summary = TRUE)
+results <- runMCMC(cMCMC, niter = 60000, nburnin = 15000, nchains = 2, summary = TRUE)
+results$summary
+saveRDS(results, "Model_A4_Samples.rds")
 
 # --- 8) OUTPUT ---
-MCMCsummary(results$samples, params = c("log_a", "log_b", "betaSEX", "betaFEED", "betaAREA", "sigma_decade"))
+MCMCtrace(results$samples)
+MCMCsummary(results$samples)
+
+AllData <- group_by(AllData, ID)

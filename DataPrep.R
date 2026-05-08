@@ -1,375 +1,184 @@
 ## ============================================================
-## DATA HANDLING PIPELINE (CLEANED + CONSISTENT)
-## - Reads island CSVs
-## - Harmonises columns + adds Island + builds unique ID
-## - Cleans sex, defines Status (alive/dead), builds IslandStart
-## - Removes individuals with >1 feeding regime (e.g., 6 Bitter dual-feeding)
-## - Assigns Species (inornata vs figginsi)
-## - Converts ID to numeric index for CH construction
-## - Builds CH, censoring intervals (cintB, cintD), y, etc.
-## - Saves image
+## FINAL CORRECTED PIPELINE: SVL-Tightened with 30-Year Cap
 ## ============================================================
-
-library(haven)
-library(survival)
 library(tidyverse)
 library(lubridate)
-library(nimble)
-library(purrr)
-library(mclust)
-library(GGally)
-library(boot)
-library(parallel)
-library(mcmcplots)
-library(coda)
-library(stringr)
+library(quantreg)
+library(data.table)
 
 rm(list = ls())
 
-## -----------------------------
-## 1) Load island datasets
-## -----------------------------
-Bitter <- read_csv("DoubleCensored/All_Island_Data/Data/BitterGuanaCay_clean.csv") %>%
-  mutate(date = dmy(date),
-         feeding = as.factor(feeding))
+# --- 1. LOAD RAW DATA ---
+island_files <- list(
+  Bitter = "DoubleCensored/All_Island_Data/Data/BitterGuanaCay_clean.csv",
+  FFRC   = "DoubleCensored/All_Island_Data/Data/FlatRockThru2019_CleanOct2020.csv",
+  Gaulin = "DoubleCensored/All_Island_Data/Data/GaulinCay_clean.csv",
+  Leaf   = "DoubleCensored/All_Island_Data/Data/LeafCayThru2019_CleanOct2020.csv",
+  Noddy  = "DoubleCensored/All_Island_Data/Data/NoddyCCay_Clean.csv",
+  NAdder = "DoubleCensored/All_Island_Data/Data/NorthAdderly_clean.csv",
+  UCay   = "DoubleCensored/All_Island_Data/Data/UcayThru2019_CleanOct2020.csv",
+  WhiteB = "DoubleCensored/All_Island_Data/Data/WhiteBay_clean.csv"
+)
 
-FFRC <- read_csv("DoubleCensored/All_Island_Data/Data/FlatRockThru2019_CleanOct2020.csv") %>%
-  mutate(date = mdy(date),
-         feeding = as.factor(feeding))
-
-Gaulin <- read_csv("DoubleCensored/All_Island_Data/Data/GaulinCay_clean.csv") %>%
-  mutate(date = dmy(date)) %>%
-  filter(!(Pit == "4264176E36" & `body-mass` == 2070)) %>%
-  filter(!(Pit == "442A0F6D30" & `body-mass` == 2460)) %>%
-  mutate(feeding = as.factor(feeding))
-
-Leaf <- read_csv("DoubleCensored/All_Island_Data/Data/LeafCayThru2019_CleanOct2020.csv") %>%
-  mutate(date = mdy(date),
-         feeding = as.factor(feeding))
-
-Noddy <- read_csv("DoubleCensored/All_Island_Data/Data/NoddyCCay_Clean.csv") %>%
-  mutate(date = dmy(date),
-         feeding = as.factor(feeding))
-
-NAdder <- read_csv("DoubleCensored/All_Island_Data/Data/NorthAdderly_clean.csv") %>%
-  mutate(date = dmy(date),
-         feeding = as.factor(feeding))
-
-UCay <- read_csv("DoubleCensored/All_Island_Data/Data/UcayThru2019_CleanOct2020.csv") %>%
-  mutate(date = mdy(date),
-         feeding = as.factor(feeding))
-
-WhiteB <- read_csv("DoubleCensored/All_Island_Data/Data/WhiteBay_clean.csv") %>%
-  mutate(date = dmy(date),
-         feeding = as.factor(feeding))
-
-## Quick sanity checks (optional)
-# lapply(list(Bitter, FFRC, Gaulin, Leaf, Noddy, NAdder, UCay, WhiteB),
-#        function(df) list(range = range(df$date, na.rm = TRUE),
-#                          feeding = summary(df$feeding)))
-
-## -----------------------------
-## 2) Harmonise columns & bind
-## -----------------------------
-island_names <- c("Bitter", "FFRC", "Gaulin", "Leaf", "Noddy", "NAdder", "UCay", "WhiteB")
-island_list  <- mget(island_names)
-
-## Add Island column
-island_list <- lapply(names(island_list), function(nm) {
-  df <- island_list[[nm]]
-  df$Island <- nm
-  df
+AllData_raw <- map2_df(island_files, names(island_files), ~{
+  read_csv(.x, col_types = cols(.default = "c")) %>% mutate(Island = .y)
 })
-names(island_list) <- island_names
 
-## Common columns across all islands
-common_cols <- Reduce(intersect, lapply(island_list, colnames))
-print(common_cols)
-
-## Columns required to keep a row
-NACols <- c("CapDate", "animal_id")
-
-AllData <- do.call(rbind, lapply(island_list, function(df) df[, common_cols, drop = FALSE])) %>%
-  rename(CapDate = date) %>%
-  filter(rowSums(is.na(.)) != ncol(.)) %>%  # remove fully-NA rows
-  filter(complete.cases(select(., all_of(NACols)))) %>%
+# --- 2. CLEANING & STATUS ---
+AllData <- AllData_raw %>%
   mutate(
-    sex = as.factor(sex),
-    ID  = str_replace_all(paste(Island, animal_id), " ", "")
-  )
-
-rm(list = c("Bitter","FFRC","Gaulin","Leaf","Noddy","NAdder","UCay","WhiteB","island_list","common_cols"))
-
-## -----------------------------
-## 3) Clean/standardise sex
-## -----------------------------
-AllData <- AllData %>%
-  mutate(
-    sex = case_when(
-      sex == "female" ~ "F",
-      sex == "male"   ~ "M",
-      TRUE            ~ as.character(sex)
-    )
+    CapDate = parse_date_time(date, orders = c("dmy", "mdy", "ymd")),
+    CalYear = year(CapDate),
+    svl = as.numeric(svl),
+    age = as.numeric(age),
+    sex = case_when(grepl("^f", sex, ignore.case = TRUE) ~ "F",
+                    grepl("^m", sex, ignore.case = TRUE) ~ "M",
+                    TRUE ~ NA_character_)
   ) %>%
-  group_by(ID) %>%
-  filter(any(sex %in% c("M","F"))) %>%
+  filter(!is.na(CapDate), !is.na(animal_id))
+
+# Detect Status
+dead_keywords <- "dead|deceased|died|carcass"
+row_text <- do.call(paste, c(AllData, sep = " "))
+AllData$Status <- if_else(grepl(dead_keywords, row_text, ignore.case = TRUE), 2, 1)
+
+AllData <- AllData %>%
+  mutate(ID_raw = paste0(Island, animal_id)) %>%
+  group_by(ID_raw) %>%
+  mutate(sex = (na.omit(sex))[1]) %>% 
+  filter(!is.na(sex)) %>%
+  filter(n_distinct(feeding, na.rm = TRUE) <= 1) %>%
+  filter(!(Island == "Bitter" & feeding == "none")) %>%
   ungroup()
 
-get_mode <- function(x) {
-  x <- na.omit(x)
-  if (length(x) == 0) return(NA)
-  tab <- table(x)
-  names(tab)[which.max(tab)]
-}
-
-AllData <- AllData %>%
-  arrange(ID) %>%
-  group_by(ID) %>%
-  mutate(sex = get_mode(sex)) %>%
-  ungroup()
-
-## Drop individuals with only 1 record and sex still NA (belt & braces)
-AllData <- AllData %>%
-  group_by(ID) %>%
-  mutate(n_entries = n()) %>%
-  ungroup() %>%
-  filter(!(n_entries == 1 & is.na(sex))) %>%
-  select(-n_entries)
-
-## -----------------------------
-## 4) Status and Year variables
-## -----------------------------
-## NOTE: This flags dead if any column contains "dead" (broad but matches your prior approach)
-AllData <- AllData %>%
-  mutate(
-    Status = ifelse(
-      apply(., 1, function(row) any(grepl("(?i)dead", row, perl = TRUE))),
-      2, 1
-    )
-  ) %>%
-  arrange(ID)
-
-AllData$Year <- year(AllData$CapDate)
-
-AllData <- AllData %>%
-  group_by(Island) %>%
-  mutate(IslandStart = min(Year, na.rm = TRUE)) %>%
-  ungroup()
-
-## -----------------------------
-## 5) Remove individuals with >1 feeding regime (ignore NA)
-## -----------------------------
-## (This should catch the 6 Bitter dual-feeding individuals)
-multi_feed <- AllData %>%
-  group_by(ID) %>%
-  summarise(n_feed_types = n_distinct(feeding, na.rm = TRUE), .groups = "drop") %>%
-  filter(n_feed_types > 1) %>%
-  pull(ID)
-
-## Audit what will be removed
-multi_feed_check <- AllData %>%
-  filter(ID %in% multi_feed) %>%
-  distinct(Island, ID, feeding) %>%
-  arrange(Island, ID, feeding)
-
-cat("\n--- Individuals with >1 feeding regime (to be removed) ---\n")
-print(multi_feed_check)
-
-cat("\n--- Counts by island for multi-feed individuals ---\n")
-AllData %>%
-  filter(ID %in% multi_feed) %>%
-  distinct(ID, Island) %>%
-  count(Island) %>%
-  arrange(Island) %>%
-  print()
-
-## Remove them
-AllData <- AllData %>%
-  filter(!(ID %in% multi_feed))
-
-## Verify now “one feeding per island” at the individual level
-cat("\n--- Individual-level feeding counts after removal ---\n")
-AllData %>%
-  distinct(ID, .keep_all = TRUE) %>%
-  count(Island, feeding) %>%
-  arrange(Island, feeding) %>%
-  print()
-
-## ============================================================
-## REMOVE Bitter individuals with feeding == "none"
-## (drops whole individuals, not just the rows)
-## ============================================================
-bitter_none_ids <- AllData %>%
-  filter(Island == "Bitter", feeding == "none") %>%
-  distinct(ID) %>%
-  pull(ID)
-
-cat("\nBitter 'none' IDs to remove:", length(bitter_none_ids), "\n")
-
-## optional audit table
-AllData %>%
-  filter(ID %in% bitter_none_ids) %>%
-  distinct(Island, ID, feeding) %>%
-  arrange(ID) %>%
-  print(n = 200)
-
-## remove those individuals completely
-AllData <- AllData %>%
-  filter(!(ID %in% bitter_none_ids))
-
-## quick check
-AllData %>%
-  distinct(ID, .keep_all = TRUE) %>%
-  filter(Island == "Bitter") %>%
-  count(feeding) %>%
-  print()
-
-## -----------------------------
-## 6) Species assignment
-## -----------------------------
-## Reference list for inornata IDs
-inorn <- read_csv("Data/Iguana_ID_InornataSp.csv") %>%
-  mutate(
-    Island = fct_recode(as_factor(Island), FFRC = "FlatRock"),
-    ID     = str_c(Island, animal_id, sep = "")
-  )
-
-sep_ids <- inorn %>% distinct(ID)
-
-AllData <- AllData %>%
-  mutate(
-    Species = case_when(
-      Island %in% c("FFRC", "UCay") ~ "inornata",
-      ID %in% sep_ids$ID            ~ "inornata",
-      TRUE                          ~ "figginsi"
-    )
-  )
-
-## Check for any individuals labelled as both species (should be none)
-species_conflicts <- AllData %>%
-  group_by(ID) %>%
-  summarise(n_species = n_distinct(Species), .groups = "drop") %>%
-  filter(n_species > 1)
-
-if (nrow(species_conflicts) > 0) {
-  warning("Some IDs have multiple Species labels. Inspect species_conflicts.")
-  print(species_conflicts)
-}
-
-## -----------------------------
-## 7) Reindex time + ID for modelling
-## -----------------------------
-YearZ <- 1950
-
-## Convert ID to numeric (model index)
-AllData$ID <- as.numeric(as.factor(AllData$ID))
-AllData <- arrange(AllData, ID)
-
-## Put Year / IslandStart onto “since 1950” scale
-AllData$Year       <- AllData$Year - YearZ
-AllData$IslandStart <- AllData$IslandStart - YearZ
-
-## Death time per individual (if any Status==2)
-AllData <- AllData %>%
-  mutate(Death = ifelse(Status == 2, Year, NA_real_)) %>%
-  group_by(ID) %>%
-  mutate(Death = ifelse(all(is.na(Death)), NA_real_, max(Death, na.rm = TRUE))) %>%
-  ungroup()
-
-saveRDS(AllData, "AllData.rds")
-
-## -----------------------------
-## 8) Birth times for known-aged individuals
-## -----------------------------
-AllData <- AllData %>%
-  mutate(age = suppressWarnings(as.numeric(age))) %>%
-  group_by(ID) %>%
-  mutate(ageR = round(age, digits = 0)) %>%
-  mutate(
-    Birth = ifelse(
-      all(is.na(Year)) | all(is.na(ageR)),
-      NA_real_,
-      min(Year, na.rm = TRUE) - min(ageR, na.rm = TRUE)
-    )
-  ) %>%
-  mutate(
-    LastSeen = case_when(
-      any(Status == 1, na.rm = TRUE) ~ max(Year[Status == 1], na.rm = TRUE),
-      TRUE ~ NA_real_
-    )
-  ) %>%
-  ungroup()
-
-tKB <- AllData %>% distinct(ID, .keep_all = TRUE) %>% pull(Birth)
-tKD <- AllData %>% distinct(ID, .keep_all = TRUE) %>% pull(Death)
-
-## -----------------------------
-## 9) Capture History (CH)
-## -----------------------------
-## CH columns: 1..(last_year_since_1950)
-last_year_since_1950 <- max(AllData$Year, na.rm = TRUE)
+AllData$ID <- as.numeric(as.factor(AllData$ID_raw))
 nind <- length(unique(AllData$ID))
 
-CH <- matrix(0, nrow = nind, ncol = last_year_since_1950)
+# --- 3. GROWTH CALIBRATION (SVL -> Age) ---
+calibration_data <- AllData %>%
+  filter(!is.na(age), !is.na(svl), age > 0) %>%
+  # IMPORTANT: If your data has "known ages" > 30, cap them to 30 for the model
+  mutate(age = pmin(age, 30)) %>% 
+  mutate(log_age = log(age), sex_f = as.factor(sex))
 
-alive_data <- AllData %>% filter(Status == 1)
+fit_min_log <- rq(log_age ~ svl + I(svl^2) + sex_f, tau = 0.05, data = calibration_data)
+fit_max_log <- rq(log_age ~ svl + I(svl^2) + sex_f, tau = 0.95, data = calibration_data)
 
-## Fill CH with 1 where alive detections occurred
-CH[as.matrix(alive_data[, c("ID", "Year")])] <- 1
+# --- 4. INDIVIDUAL LIFE HISTORIES ---
+growth_info <- AllData %>%
+  group_by(ID) %>%
+  summarise(
+    island = Island[1], sex = sex[1], feeding = feeding[1],
+    first_svl = svl[!is.na(svl)][1],
+    first_svl_year = CalYear[!is.na(svl)][1],
+    # Cap known age at 30
+    known_age = pmin(age[!is.na(age)][1], 30),
+    known_birth_cal = if_else(!is.na(known_age), CalYear[!is.na(age)][1] - known_age, NA_real_),
+    total_growth = if(any(!is.na(svl))) max(svl, na.rm=T) - min(svl, na.rm=T) else 0,
+    tF_cal = min(CalYear),
+    tL_cal = max(CalYear[Status == 1]), 
+    tD_cal = if(any(Status == 2)) max(CalYear[Status == 2]) else NA,
+    .groups = "drop"
+  ) %>% arrange(ID)
 
-## First / last detection occasion
-tL <- apply(CH, 1, function(x) { w <- which(x == 1); if (length(w)==0) NA_integer_ else max(w) })
-tF <- apply(CH, 1, function(x) { w <- which(x == 1); if (length(w)==0) NA_integer_ else min(w) })
-names(tF) <- NULL
+# --- 5. PREDICT BIRTH WINDOWS WITH HARD BIOLOGICAL CAP ---
+growth_info <- growth_info %>%
+  mutate(sex_f = as.factor(sex)) %>%
+  mutate(
+    # Raw predictions from regression
+    p_min_raw = if_else(!is.na(first_svl), exp(predict(fit_min_log, newdata = list(svl = first_svl, sex_f = sex_f))), 0),
+    p_max_raw = if_else(!is.na(first_svl), exp(predict(fit_max_log, newdata = list(svl = first_svl, sex_f = sex_f))), 30)
+  ) %>%
+  mutate(
+    # APPLY HARD BIOLOGICAL CAP (Max age = 30)
+    p_max = pmin(p_max_raw, 30),
+    p_min = pmin(p_min_raw, p_max - 1)
+  ) %>%
+  mutate(
+    # Logic Gates
+    p_max = if_else(!is.na(first_svl) & first_svl < 25, pmin(p_max, 4), p_max),
+    p_max = if_else(total_growth > 5, pmin(p_max, 15), p_max)
+  ) %>%
+  mutate(pred_min_age = pmax(0, p_min), pred_max_age = pmax(pred_min_age + 1, p_max))
 
-## Drop any individuals with no alive detections (shouldn’t happen, but safe)
-no_det <- which(is.na(tF) | is.na(tL))
-if (length(no_det) > 0) {
-  warning("Dropping individuals with no alive detections: ", length(no_det))
-  keep <- setdiff(1:nind, no_det)
-  CH  <- CH[keep, , drop = FALSE]
-  tL  <- tL[keep]
-  tF  <- tF[keep]
-  tKB <- tKB[keep]
-  tKD <- tKD[keep]
-  nind <- nrow(CH)
+# --- 6. DYNAMIC TIMELINE ALIGNMENT ---
+cintB_cal <- matrix(NA, nrow = nind, ncol = 2)
+for(i in 1:nind) {
+  if(!is.na(growth_info$known_birth_cal[i])) {
+    cintB_cal[i, ] <- growth_info$known_birth_cal[i] + c(-1, 0)
+  } else {
+    ref_yr <- if(!is.na(growth_info$first_svl_year[i])) growth_info$first_svl_year[i] else growth_info$tF_cal[i]
+    cintB_cal[i, 1] <- floor(ref_yr - growth_info$pred_max_age[i])
+    cintB_cal[i, 2] <- floor(ref_yr - growth_info$pred_min_age[i])
+  }
 }
 
-## -----------------------------
-## 10) Censoring intervals
-## -----------------------------
-## Birth censoring: known births vs unknown (adult) births
-cintB <- matrix(NA, nrow = nind, ncol = 2)
+# Now Origin will be ~1950 (1980 - 30)
+Origin <- min(cintB_cal[, 1], na.rm = TRUE)
 
-known_idx <- !is.na(tKB)
-cintB[known_idx, 1] <- tKB[known_idx] - 1
-cintB[known_idx, 2] <- tKB[known_idx]
-
-unknown_idx <- is.na(tKB)
-cintB[unknown_idx, 1] <- tF[unknown_idx] - 29
-cintB[unknown_idx, 2] <- tF[unknown_idx]
-
-## Death censoring: interval for known dead, right-censor for unknown
-cintD <- cbind(tL, tKD)
-cintD[is.na(tKD), 2] <- cintD[is.na(tKD), 1]
-cintD[is.na(tKD), 1] <- 0
-censoredD <- ifelse(!is.na(tKD), 1, 2)
-
-tD    <- rep(NA, length(tKD))
-tstar <- rep(NA, length(tKD))
-dind  <- rep(1, length(tKD))
-
-## Detections count
-y <- rowSums(CH)
-names(y) <- NULL
-
-## Basic checks
-stopifnot(all(tL >= tF))
-if (any(!is.na(tKD))) {
-  stopifnot(all(tKD[!is.na(tKD)] > tL[!is.na(tKD)]))
+# Shift relative to Origin
+cintB_adj <- cintB_cal - Origin + 1
+cintD_adj <- matrix(NA, nrow = nind, ncol = 2)
+for(i in 1:nind) {
+  cintD_adj[i, 1] <- growth_info$tL_cal[i] - Origin + 1
+  cintD_adj[i, 2] <- if_else(!is.na(growth_info$tD_cal[i]), growth_info$tD_cal[i] - Origin + 1, cintD_adj[i, 1])
 }
 
-## -----------------------------
-## 11) Save
-## -----------------------------
-save.image("igs_AllIslands_CleanDH_280426_obsStart.RData")
+# Final logical check for cintB
+for(i in 1:nind) {
+  tF_adj <- growth_info$tF_cal[i] - Origin + 1
+  cintB_adj[i, 2] <- min(cintB_adj[i, 2], tF_adj)
+  if(cintB_adj[i, 1] >= cintB_adj[i, 2]) cintB_adj[i, 1] <- cintB_adj[i, 2] - 1
+  cintB_adj[i, 1] <- pmax(1, cintB_adj[i, 1])
+}
+
+# --- 7. CAPTURE HISTORY & EFFORT ---
+tMax_adj <- max(AllData$CalYear) - Origin + 1
+CH <- matrix(0, nrow = nind, ncol = tMax_adj)
+for(r in 1:nrow(AllData)) {
+  CH[AllData$ID[r], AllData$CalYear[r] - Origin + 1] <- 1
+}
+
+id_df_final <- growth_info %>%
+  mutate(sex_num = if_else(sex == "M", 1, 0),
+         feed_num = if_else(feeding == "none", 0, 1))
+
+ordered_islands <- levels(as.factor(id_df_final$island))
+n_islands <- length(ordered_islands)
+island_idx <- as.numeric(factor(id_df_final$island, levels = ordered_islands))
+
+effort_matrix <- matrix(0, nrow = n_islands, ncol = tMax_adj)
+actual_surveys <- AllData %>% 
+  distinct(Island, CalYear) %>% 
+  mutate(idx = as.numeric(factor(Island, levels = ordered_islands)),
+         yr_adj = CalYear - Origin + 1)
+for(r in 1:nrow(actual_surveys)) { effort_matrix[actual_surveys$idx[r], actual_surveys$yr_adj[r]] <- 1 }
+cum_effort_adj <- t(apply(effort_matrix, 1, cumsum))
+cum_effort_adj <- cbind(rep(0, n_islands), cum_effort_adj)
+
+island_starts_cal <- AllData %>% group_by(Island) %>% summarise(S = min(CalYear), .groups="drop")
+is_start_vec_adj <- island_starts_cal$S[match(id_df_final$island, island_starts_cal$Island)] - Origin + 1
+
+# --- 8. DIAGNOSTICS ---
+message("Origin Year (Model Year 1): ", Origin)
+message("Average Birth Window: ", round(mean(cintB_adj[,2]-cintB_adj[,1]), 2), " years")
+
+# --- 1. PREPARE VECTORS ---
+y_vec <- as.numeric(rowSums(CH))
+sex_vec <- id_df_final$sex_num
+feed_vec <- id_df_final$feed_num
+
+# --- 2. DEFINE CENSORING STATUS DIRECTLY ---
+# Logic: If cintD[i,1] == cintD[i,2], it's right-censored (Value 2)
+# If cintD[i,1] < cintD[i,2], it's interval-censored (Value 1)
+censoredD_vec <- ifelse(cintD_adj[,1] == cintD_adj[,2], 2, 1)
+
+# --- 3. CLEANUP ENVIRONMENT ---
+# Keep only what is strictly necessary for the NIMBLE run
+rm(list = setdiff(ls(), c("nind", "tMax_adj", "CH", "cintB_adj", "cintD_adj", 
+                          "id_df_final", "island_idx", "n_islands", 
+                          "cum_effort_adj", "is_start_vec_adj", "Origin",
+                          "y_vec", "sex_vec", "feed_vec", "censoredD_vec")))
+
+message("Setup verified. Ready to run NIMBLE.")
+message("Cleanup complete. Model ready for ", nind, " individuals over ", tMax_adj, " years.")
