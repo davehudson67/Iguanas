@@ -793,63 +793,166 @@ source("Distributions/Dist_GompertzLB.R")
 source("Distributions/Dist_Gompertz.R")
 source("Distributions/Dist_GompertzNim.R")
 
+
 ## ============================================================
-## MODEL B: GOMPERTZ WITH PARTIAL POOLING ON ISLAND EFFECTS FOR b
+## ADD A DENSITY (island x year) EFFECT ON log(a) ONLY
+## - dens_matrix[island, year] should be z-scored (recommended)
+## - use density at entry year: cohort_idx = floor(tB)+1 (clamped)
+## - keeps your existing Model B structure (partial pooling on b)
 ## ============================================================
 
-code_B <- nimbleCode({
-  
+library(dplyr)
+library(tidyr)
+library(nimble)
+
+## ------------------------------------------------------------
+## 0) Build dens_matrix (island x year) from your existing objects
+##    REQUIREMENTS:
+##      - AllData (with Island, CalYear, Status, ID) already built
+##      - growth_info (with island per ID)
+##      - CH (nind x tMax) already built (live detections only)
+##      - ordered_islands, n_islands, tMax already defined
+##      - Origin already defined (so year_adj = CalYear - Origin + 1)
+##
+##    This is a pragmatic MNA proxy:
+##      For each individual: alive from first detection..last detection
+##      Count alive individuals per island-year
+##      Optionally divide by area if you have it; here we just z-score log(MNA)
+## ------------------------------------------------------------
+
+# Ensure id_df in the same row order as your model (growth_info order == ID order)
+id_df <- growth_info %>%
+  mutate(row_idx = 1:n()) %>%
+  select(row_idx, island)
+
+# First/last detection (adjusted year index 1..tMax)
+first_last <- as.data.frame(CH) %>%
+  mutate(row_idx = 1:n()) %>%
+  pivot_longer(-row_idx, names_to = "Year_Idx", values_to = "Detected") %>%
+  mutate(Year_Idx = as.integer(gsub("^V", "", Year_Idx))) %>%
+  left_join(id_df, by = "row_idx") %>%
+  group_by(row_idx, island) %>%
+  summarise(
+    First = suppressWarnings(min(Year_Idx[Detected == 1], na.rm = TRUE)),
+    Last  = suppressWarnings(max(Year_Idx[Detected == 1], na.rm = TRUE)),
+    anyDet = any(Detected == 1),
+    .groups = "drop"
+  ) %>%
+  filter(anyDet)
+
+mna_df <- first_last %>%
+  mutate(Year_Idx = purrr::map2(First, Last, seq)) %>%
+  tidyr::unnest(Year_Idx) %>%
+  group_by(island, Year_Idx) %>%
+  summarise(MNA = n(), .groups = "drop") %>%
+  mutate(
+    island_idx = as.numeric(factor(island, levels = ordered_islands))
+  ) %>%
+  filter(Year_Idx >= 1, Year_Idx <= tMax)
+
+# Fill dens_matrix and z-score within island across years
+dens_matrix <- matrix(0, nrow = n_islands, ncol = tMax)
+
+mna_scaled <- mna_df %>%
+  group_by(island_idx) %>%
+  mutate(dens_z = as.numeric(scale(log(pmax(MNA, 1))))) %>%  # log(MNA), safe for zeros
+  ungroup()
+
+mna_scaled$dens_z[!is.finite(mna_scaled$dens_z)] <- 0
+
+for (r in 1:nrow(mna_scaled)) {
+  dens_matrix[mna_scaled$island_idx[r], mna_scaled$Year_Idx[r]] <- mna_scaled$dens_z[r]
+}
+
+## ------------------------------------------------------------
+## 1) MODEL B + DENSITY ON log(a)
+##    NOTE: use island_idx[i] for island membership everywhere.
+## ------------------------------------------------------------
+
+code_B_densA <- nimbleCode({
   for (i in 1:nind) {
     
     ## Latent birth/entry time
     tB[i] ~ dunif(cintB[i, 1], cintB[i, 2])
+    
+    ## Left truncation lower bound in AGE units
     L[i] <- max(0, island_start_time[i] - tB[i])
+    
     ## Left-truncated Gompertz age-at-death
     tstar[i] ~ dGompertzLB(amult[i], bmult[i], lowerBound = L[i])
     tD[i] <- tB[i] + tstar[i]
+    
+    ## Death censoring: 2-cutpoint dinterval
     censoredD[i] ~ dinterval(tD[i], cintD[i, 1:2])
     
+    ## Entry year for density lookup (1..tMax)
+    cohort_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
+    
+    ## Density-at-entry (island x entry-year)
+    dens_entry[i] <- dens_matrix[ island_idx[i], cohort_idx[i] ]
+    
+    ## Gompertz parameters
+    ## log(a): baseline + sex + island + density
     log(amult[i]) <- log(a) +
       betaSEX[1] * sex[i] +
-      betaISLAND_a[island_idx[i]]
+      betaISLAND_a[ island_idx[i] ] +
+      betaDENS_a * dens_entry[i]
     
+    ## log(b): baseline + sex + island (partial pooled)
     log(bmult[i]) <- log(b) +
       betaSEX[2] * sex[i] +
-      betaISLAND_b[island_idx[i]]
+      betaISLAND_b[ island_idx[i] ]
     
-
+    ## Observation model (ones-trick binomial, as before)
     tB_year_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
     nm_start[i] <- max(tB_year_idx[i], island_start_idx[i])
     end_year[i] <- max(1, min(tMax, floor(tD[i]) + 1))
-    nMpos[i] <- cum_effort[island_idx[i], end_year[i] + 1] - cum_effort[island_idx[i], nm_start[i]]
+    
+    nMpos[i] <- cum_effort[ island_idx[i], end_year[i] + 1 ] -
+      cum_effort[ island_idx[i], nm_start[i] ]
+    
     nMpos_safe[i] <- max(y[i], nMpos[i])
     
-    pd_raw[i] <- exp(y[i] * log(mean.p + 1.0E-10) + (nMpos_safe[i] - y[i]) * log(1 - mean.p + 1.0E-10))
+    pd_raw[i] <- exp(y[i] * log(mean.p + 1.0E-10) +
+                       (nMpos_safe[i] - y[i]) * log(1 - mean.p + 1.0E-10))
     pd[i] <- min(0.999999, pd_raw[i])
     dind[i] ~ dbern(pd[i])
   }
   
+  ## Sex effects
   for (k in 1:2) {
-    betaSEX[k]  ~ dnorm(0, 1)
+    betaSEX[k] ~ dnorm(0, 1)
   }
   
+  ## Island effects on a (as before)
   for (r in 1:n_islands) {
     betaISLAND_a[r] ~ dnorm(0, 1)
   }
   
+  ## Partial pooling on island effects for b (as before)
   sigma_b_island ~ dunif(0, 2)
   for (r in 1:n_islands) {
     betaISLAND_b_raw[r] ~ dnorm(0, 1)
     betaISLAND_b[r] <- sigma_b_island * betaISLAND_b_raw[r]
   }
   
+  ## Density effect on log(a)
+  betaDENS_a ~ dnorm(0, 1)
+  
+  ## Baseline Gompertz parameters + detection
   a ~ dexp(1)
   b ~ dexp(1)
-  
   mean.p ~ dunif(0, 1)
 })
 
-consts <- list(
+## ------------------------------------------------------------
+## 2) CONSTANTS / DATA
+##    IMPORTANT:
+##      - dens_matrix must go in data_list (it is fixed data)
+##      - keep cintB/cintD in constants (as you’ve been doing)
+## ------------------------------------------------------------
+
+consts_B_densA <- list(
   nind = nind,
   tMax = tMax,
   n_islands = n_islands,
@@ -862,42 +965,35 @@ consts <- list(
   y = as.numeric(y)
 )
 
-data_B <- list(
+data_B_densA <- list(
   censoredD = as.numeric(censoredD_vec),
   dind = rep(1, nind),
-  cum_effort = as.matrix(cum_effort_for_model)
+  cum_effort = as.matrix(cum_effort_for_model),
+  dens_matrix = as.matrix(dens_matrix)
 )
 
-make_inits_B <- function(chain_id = 1) {
+## ------------------------------------------------------------
+## 3) INITS (extend your make_inits_B)
+## ------------------------------------------------------------
+
+make_inits_B_densA <- function(chain_id = 1) {
   
-  ## Jitter tB inside each birth interval
-  tB_start <- runif(
-    nind,
-    min = cintB_adj[, 1],
-    max = cintB_adj[, 2]
-  )
+  set.seed(100 + chain_id)
   
-  ## Initialise tD consistently with censoring
+  tB_start <- runif(nind, min = cintB_adj[, 1], max = cintB_adj[, 2])
+  
   tD_start <- numeric(nind)
-  
-  for(i in seq_len(nind)) {
+  for (i in seq_len(nind)) {
     
-    if(censoredD_vec[i] == 1) {
-      ## interval-censored: inside death interval
-      tD_start[i] <- runif(
-        1,
-        min = cintD_adj[i, 1] + 0.001,
-        max = cintD_adj[i, 2] - 0.001
-      )
-    }
-    
-    if(censoredD_vec[i] == 2) {
-      ## right-censored: after censoring point
+    if (censoredD_vec[i] == 1) {
+      tD_start[i] <- runif(1,
+                           min = cintD_adj[i, 1] + 0.001,
+                           max = cintD_adj[i, 2] - 0.001)
+    } else { # right-censored category 2
       tD_start[i] <- cintD_adj[i, 2] + runif(1, 1, 5)
     }
     
-    ## Ensure death is after birth
-    if(tD_start[i] <= tB_start[i]) {
+    if (tD_start[i] <= tB_start[i]) {
       tD_start[i] <- tB_start[i] + runif(1, 1, 5)
     }
   }
@@ -908,91 +1004,80 @@ make_inits_B <- function(chain_id = 1) {
     tB = tB_start,
     tstar = tstar_start,
     
-    ## Baseline Gompertz parameters
     a = exp(rnorm(1, log(0.01), 0.3)),
     b = exp(rnorm(1, log(0.05), 0.3)),
     
-    ## Fixed effects
     betaSEX = rnorm(2, 0, 0.2),
+    betaDENS_a = rnorm(1, 0, 0.2),
     
-    ## Island effects on a
     betaISLAND_a = rnorm(n_islands, 0, 0.2),
     
-    ## Partial pooling on b
     sigma_b_island = runif(1, 0.05, 0.7),
     betaISLAND_b_raw = rnorm(n_islands, 0, 0.2),
     
-    ## Detection
     mean.p = runif(1, 0.15, 0.4)
   )
 }
 
-inits_list_B <- list(
-  make_inits_B(1),
-  make_inits_B(2),
-  make_inits_B(3)
+inits_list_B_densA <- list(
+  make_inits_B_densA(1),
+  make_inits_B_densA(2),
+  make_inits_B_densA(3)
 )
 
-## ============================================================
-## BUILD MODEL B
-## ============================================================
+## ------------------------------------------------------------
+## 4) BUILD / RUN (same pattern as your Model B)
+## ------------------------------------------------------------
 
-model_B <- nimbleModel(
-  code = code_B,
-  constants = consts,
-  data = data_B,
-  inits = inits_list_B,
+model_B_densA <- nimbleModel(
+  code = code_B_densA,
+  constants = consts_B_densA,
+  data = data_B_densA,
+  inits = inits_list_B_densA[[1]],
   calculate = FALSE
 )
 
-initial_lp_B <- model_B$calculate()
+lp0 <- model_B_densA$calculate()
+cat("Initial logProb:", lp0, "\n")
 
-message("Initial model B log probability:")
-print(initial_lp_B)
+cModel_B_densA <- compileNimble(model_B_densA)
 
-## ============================================================
-## CONFIGURE MCMC FOR MODEL B
-## ============================================================
-
-conf_B <- configureMCMC(
-  model_B,
-  monitors = c("a", "b", "mean.p", "betaSEX", "betaISLAND_a", "betaISLAND_b", "sigma_b_island"),
-  #monitors2 = c("tB", "tstar", "tD", "amult", "bmult"),
+conf_B_densA <- configureMCMC(
+  model_B_densA,
+  monitors = c("a", "b", "mean.p",
+               "betaSEX", "betaDENS_a",
+               "betaISLAND_a", "betaISLAND_b", "sigma_b_island"),
   enableWAIC = TRUE
 )
 
-## More robust samplers for baseline Gompertz parameters
-conf_B$removeSamplers(c("a", "b"))
-conf_B$addSampler(target = c("a", "b"), type = "AF_slice")
+# samplers
+conf_B_densA$removeSamplers(c("a", "b"))
+conf_B_densA$addSampler(target = c("a", "b"), type = "AF_slice")
 
-## Slice sampler for the partial-pooling scale
-conf_B$removeSamplers("sigma_b_island")
-conf_B$addSampler(target = "sigma_b_island", type = "slice")
+conf_B_densA$removeSamplers("sigma_b_island")
+conf_B_densA$addSampler(target = "sigma_b_island", type = "slice")
 
-## Slice samplers for latent continuous states
+# slice samplers for latent states (as you did)
 for (i in 1:nind) {
-  conf_B$removeSamplers(paste0('tB[', i, ']'))
-  conf_B$removeSamplers(paste0('tstar[', i, ']'))
-  conf_B$addSampler(target = c(paste0('tB[', i, ']'), paste0('tstar[', i, ']')), type = "AF_slice")
+  conf_B_densA$removeSamplers(paste0("tB[", i, "]"))
+  conf_B_densA$removeSamplers(paste0("tstar[", i, "]"))
+  conf_B_densA$addSampler(
+    target = c(paste0("tB[", i, "]"), paste0("tstar[", i, "]")),
+    type = "AF_slice"
+  )
 }
 
-mcmc_B <- buildMCMC(conf_B)
+mcmc_B_densA <- buildMCMC(conf_B_densA)
 
-## ============================================================
-## COMPILE MODEL B
-## ============================================================
+cMCMC_B_densA <- compileNimble(mcmc_B_densA, project = model_B_densA)
 
-cModel_B <- compileNimble(model_B)
-
-cMCMC_B <- compileNimble(mcmc_B, project = model_B)
-
-run_B_test <- runMCMC(
-  cMCMC_B,
+run_B_densA <- runMCMC(
+  cMCMC_B_densA,
   niter = 500000,
   nburnin = 100000,
   nchains = 3,
   thin = 10,
-  inits = inits_list_B,
+  inits = inits_list_B_densA,
   setSeed = TRUE,
   samplesAsCodaMCMC = TRUE,
   summary = TRUE,
@@ -1000,12 +1085,7 @@ run_B_test <- runMCMC(
   progressBar = TRUE
 )
 
-run_B_test$summary
-saveRDS(run_B_test, "Model_simplePooled_samples.rds")
+saveRDS(run_B_densA, "Model_simplePooled_densityA_samples.rds")
 
-#run_B_test$summary
-#run_B_test$WAIC
-library(MCMCvis)
-library(mcmcplots)
-MCMCsummary(run_B_test$samples)
-mcmcplot(run_B_test$samples)
+print(run_B_densA$summary)
+# library(MCMCvis); MCMCsummary(run_B_densA$samples)
