@@ -1,9 +1,8 @@
 ## ============================================================
 ## MODEL_PaceOfLife.R
 ##
-## Gompertz pace-of-life model:
-##   a: sex + cohort density + temporal cohort RW1 + island RE
-##   b: sex + feeding + species + island RE
+## log(a): sex + cohort density + 5-year temporal effect + island RE
+## log(b): sex + feeding + species
 ##
 ## Feeding is an island/block-level treatment.
 ## Missing historical cohort densities use island mean density.
@@ -21,17 +20,14 @@ library(MCMCvis)
 library(mcmcplots)
 library(tidyverse)
 
-
 ## ============================================================
 ## 1. SPECIES + FEEDING
 ## ============================================================
 
-## Species coding: 0 = figginsi, 1 = inornata
 species_island <- as.integer(ordered_islands %in% c("FFRC", "UCay", "U Cay"))
 names(species_island) <- ordered_islands
 species <- species_island[island_idx]
 
-## Feeding coding: 0 = none, 1 = any feeding
 feeding_by_island <- growth_info %>%
   mutate(feeding = tolower(trimws(feeding))) %>%
   group_by(island) %>%
@@ -41,33 +37,31 @@ feed_island <- feeding_by_island$feed[match(ordered_islands, feeding_by_island$i
 feed <- feed_island[island_idx]
 
 island_table <- tibble(
-  island_idx = 1:n_islands,
+  island_idx = seq_len(n_islands),
   island = ordered_islands,
   species = ifelse(species_island == 1, "inornata", "figginsi"),
   feeding = ifelse(feed_island == 1, "fed", "unfed")
 )
 
 print(island_table)
-stopifnot(!anyNA(species), !anyNA(feed))
+
+stopifnot(length(species) == nind, length(feed) == nind, !anyNA(species), !anyNA(feed))
 
 ## ============================================================
 ## 2. COHORT DENSITY
-##
-## Density = MNA / usable habitat.
-## Observed island-year density where available.
-## Missing historical years = mean observed density for island.
 ## ============================================================
 
 habitat <- read_csv("Data/Iguana_islands_habitat.csv", show_col_types = FALSE) %>%
   transmute(island = islands, usable_m2 = Useable)
 
-## Observed span of each individual
 first_last <- growth_info %>%
-  transmute(ID, island,
-            first_year = tF_cal - Origin + 1,
-            last_year  = tL_cal - Origin + 1)
+  transmute(
+    ID,
+    island,
+    first_year = tF_cal - Origin + 1,
+    last_year = tL_cal - Origin + 1
+  )
 
-## Minimum number alive (MNA) during observed life-history span
 mna_long <- first_last %>%
   rowwise() %>%
   mutate(year_idx = list(seq(first_year, last_year))) %>%
@@ -75,63 +69,91 @@ mna_long <- first_last %>%
   ungroup() %>%
   count(island, year_idx, name = "MNA") %>%
   left_join(habitat, by = "island") %>%
-  mutate(density_raw = MNA / (usable_m2 / 10000))       # animals / usable ha
+  mutate(density_raw = MNA / (usable_m2 / 10000))
 
-## Only island-years in which surveys occurred
 survey_long <- actual_surveys %>%
   transmute(island = Island, year_idx = yr_adj)
 
 density_observed <- survey_long %>%
-  left_join(mna_long %>% select(island, year_idx, MNA, density_raw),
-            by = c("island", "year_idx")) %>%
-  mutate(MNA = replace_na(MNA, 0L), density_raw = replace_na(density_raw, 0))
+  left_join(
+    mna_long %>%
+      select(island, year_idx, MNA, density_raw),
+    by = c("island", "year_idx")
+  ) %>%
+  mutate(
+    MNA = replace_na(MNA, 0L),
+    density_raw = replace_na(density_raw, 0)
+  )
 
-## Mean observed density for each island
 island_mean_density <- density_observed %>%
   group_by(island) %>%
   summarise(mean_density_raw = mean(density_raw, na.rm = TRUE), .groups = "drop")
 
-## Complete island x year series
+cat("\nMean observed density by island:\n")
+print(island_mean_density)
+
 density_complete <- expand_grid(island = ordered_islands, year_idx = 1:tMax) %>%
-  left_join(density_observed %>% select(island, year_idx, density_raw),
-            by = c("island", "year_idx")) %>%
+  left_join(
+    density_observed %>%
+      select(island, year_idx, density_raw),
+    by = c("island", "year_idx")
+  ) %>%
   left_join(island_mean_density, by = "island") %>%
   mutate(
     density_source = if_else(is.na(density_raw), "Island mean", "Observed cohort"),
     density_filled_raw = coalesce(density_raw, mean_density_raw)
   )
 
-## Global standardisation after filling
+cat("\nDensity source by island:\n")
+
+print(
+  density_complete %>%
+    count(island, density_source) %>%
+    arrange(island, density_source)
+)
+
 dens_mu <- mean(log1p(density_complete$density_filled_raw), na.rm = TRUE)
 dens_sd <- sd(log1p(density_complete$density_filled_raw), na.rm = TRUE)
-if(!is.finite(dens_sd) || dens_sd <= 0) stop("Invalid density SD.")
+
+if(!is.finite(dens_sd) || dens_sd <= 0) stop("Invalid density standard deviation.")
 
 density_complete <- density_complete %>%
   mutate(density_z = (log1p(density_filled_raw) - dens_mu) / dens_sd)
 
-## Island x cohort/year matrix
-density_matrix <- matrix(NA_real_, n_islands, tMax,
-                         dimnames = list(ordered_islands, 1:tMax))
+density_matrix <- matrix(
+  NA_real_,
+  nrow = n_islands,
+  ncol = tMax,
+  dimnames = list(ordered_islands, seq_len(tMax))
+)
 
-for(r in 1:nrow(density_complete)) {
+for(r in seq_len(nrow(density_complete))) {
   j <- match(density_complete$island[r], ordered_islands)
-  density_matrix[j, density_complete$year_idx[r]] <- density_complete$density_z[r]
+  tt <- density_complete$year_idx[r]
+  density_matrix[j, tt] <- density_complete$density_z[r]
 }
 
-stopifnot(!anyNA(density_matrix))
+stopifnot(
+  !anyNA(density_matrix),
+  nrow(density_matrix) == n_islands,
+  ncol(density_matrix) == tMax
+)
 
-cat("\nDensity source by island:\n")
-print(density_complete %>% count(island, density_source))
-
-cat("\nRaw island mean densities:\n")
-print(island_mean_density)
-
+cat("\nDensity matrix summary:\n")
+print(summary(as.vector(density_matrix)))
 
 ## ============================================================
-## 3. MODEL
+## 3. TEMPORAL COHORT BLOCKS
 ## ============================================================
 
-n_cohort <- tMax
+block_width <- 5
+n_time_blocks <- ceiling(tMax / block_width)
+
+cat("\nTemporal structure:", n_time_blocks, "blocks of", block_width, "years\n")
+
+## ============================================================
+## 4. MODEL
+## ============================================================
 
 code_POL <- nimbleCode({
   
@@ -145,29 +167,27 @@ code_POL <- nimbleCode({
     tD[i] <- tB[i] + tstar[i]
     censoredD[i] ~ dinterval(tD[i], cintD[i,1:2])
     
-    ## Latent birth cohort and associated density
-    cohort_idx[i] <- max(1, min(n_cohort, floor(tB[i]) + 1))
+    ## Annual latent birth cohort + 5-year temporal block
+    cohort_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
+    time_block[i] <- max(1, min(n_time_blocks, floor((cohort_idx[i] - 1) / block_width) + 1))
+    
+    ## Density corresponding to inferred cohort
     dens_cohort[i] <- density_matrix[island_idx[i], cohort_idx[i]]
     
-    ## --------------------------------------------------------
-    ## Gompertz a: background mortality / pace
-    ## --------------------------------------------------------
+    ## Gompertz a: baseline mortality / pace
     log(amult[i]) <- log(a) +
       betaSEX[1] * sex[i] +
       betaDENS_a * dens_cohort[i] +
-      u_cohort[cohort_idx[i]] +
+      u_time[time_block[i]] +
       island_a[island_idx[i]]
     
-    ## --------------------------------------------------------
     ## Gompertz b: actuarial ageing / senescence
-    ## --------------------------------------------------------
     log(bmult[i]) <- log(b) +
       betaSEX[2] * sex[i] +
       betaFEED_b * feed[i] +
-      betaSPEC_b * species[i] +
-      island_b[island_idx[i]]
+      betaSPEC_b * species[i]
     
-    ## Observation / detection model
+    ## Observation / detection component
     tB_year_idx[i] <- max(1, min(tMax, floor(tB[i]) + 1))
     nm_start[i] <- max(tB_year_idx[i], island_start_idx[i])
     end_year[i] <- max(1, min(tMax, floor(tD[i]) + 1))
@@ -178,56 +198,57 @@ code_POL <- nimbleCode({
     nMpos_safe[i] <- max(y[i], nMpos[i])
     
     pd_raw[i] <- exp(
-      y[i] * log(mean.p + 1e-10) +
-        (nMpos_safe[i] - y[i]) * log(1 - mean.p + 1e-10)
+      y[i] * log(mean.p + 1.0E-10) +
+        (nMpos_safe[i] - y[i]) * log(1 - mean.p + 1.0E-10)
     )
     
     pd[i] <- min(0.999999, pd_raw[i])
     dind[i] ~ dbern(pd[i])
   }
   
-  ## Individual fixed effects
+  ## Fixed effects
   for(k in 1:2) betaSEX[k] ~ dnorm(0, sd = 1)
   
   betaDENS_a ~ dnorm(0, sd = 1)
   betaFEED_b ~ dnorm(0, sd = 1)
   betaSPEC_b ~ dnorm(0, sd = 1)
   
-  ## Residual island variation: partial pooling
+  ## Residual island effect on a only
   sigma_island_a ~ dunif(0, 2)
-  sigma_island_b ~ dunif(0, 2)
   
   for(r in 1:n_islands) {
     island_a_raw[r] ~ dnorm(0, sd = 1)
-    island_b_raw[r] ~ dnorm(0, sd = 1)
-    
     island_a[r] <- sigma_island_a * island_a_raw[r]
-    island_b[r] <- sigma_island_b * island_b_raw[r]
   }
   
-  ## Temporal birth-cohort effect: RW1
-  sigma_cohort ~ dunif(0, 1)
+  ## 5-year temporal cohort random effects
+  sigma_time ~ dunif(0, 2)
   
-  u_cohort[1] <- 0
-  for(tt in 2:n_cohort) {
-    u_cohort[tt] ~ dnorm(u_cohort[tt-1], sd = sigma_cohort)
+  for(tt in 1:n_time_blocks) {
+    u_time[tt] ~ dnorm(0, sd = sigma_time)
   }
   
-  ## Baselines
+  ## Baseline parameters
   a ~ dexp(1)
   b ~ dexp(1)
   mean.p ~ dunif(0, 1)
 })
 
-
 ## ============================================================
-## 4. CONSTANTS + DATA
+## 5. CONSTANTS + DATA
 ## ============================================================
 
 consts_POL <- list(
-  nind = nind, tMax = tMax, n_cohort = n_cohort, n_islands = n_islands,
-  cintB = as.matrix(cintB_adj), cintD = as.matrix(cintD_adj),
-  sex = as.numeric(sex), feed = as.numeric(feed), species = as.numeric(species),
+  nind = nind,
+  tMax = tMax,
+  n_time_blocks = n_time_blocks,
+  block_width = block_width,
+  n_islands = n_islands,
+  cintB = as.matrix(cintB_adj),
+  cintD = as.matrix(cintD_adj),
+  sex = as.numeric(sex),
+  feed = as.numeric(feed),
+  species = as.numeric(species),
   island_idx = as.numeric(island_idx),
   island_start_time = as.numeric(island_start_time),
   island_start_idx = as.numeric(island_start_idx),
@@ -241,30 +262,35 @@ data_POL <- list(
   density_matrix = as.matrix(density_matrix)
 )
 
-
 ## ============================================================
-## 5. INITIAL VALUES
+## 6. INITIAL VALUES
 ## ============================================================
 
 make_inits_POL <- function(chain_id = 1) {
   
   set.seed(1000 + chain_id)
   
-  tB_start <- runif(nind, cintB_adj[,1], cintB_adj[,2])
+  tB_start <- runif(nind, min = cintB_adj[,1], max = cintB_adj[,2])
   tD_start <- numeric(nind)
   
-  for(i in 1:nind) {
+  for(i in seq_len(nind)) {
+    
     if(censoredD_vec[i] == 1) {
-      tD_start[i] <- runif(1, cintD_adj[i,1] + 0.001, cintD_adj[i,2] - 0.001)
-    } else {
+      tD_start[i] <- runif(
+        1,
+        min = cintD_adj[i,1] + 0.001,
+        max = cintD_adj[i,2] - 0.001
+      )
+    }
+    
+    if(censoredD_vec[i] == 2) {
       tD_start[i] <- cintD_adj[i,2] + runif(1, 1, 5)
     }
     
-    if(tD_start[i] <= tB_start[i]) tD_start[i] <- tB_start[i] + runif(1,1,5)
+    if(tD_start[i] <= tB_start[i]) {
+      tD_start[i] <- tB_start[i] + runif(1, 1, 5)
+    }
   }
-  
-  u_start <- numeric(n_cohort)
-  if(n_cohort > 1) u_start[2:n_cohort] <- cumsum(rnorm(n_cohort - 1, 0, 0.02))
   
   list(
     tB = tB_start,
@@ -280,19 +306,17 @@ make_inits_POL <- function(chain_id = 1) {
     betaSPEC_b = rnorm(1, 0, 0.10),
     
     sigma_island_a = runif(1, 0.05, 0.4),
-    sigma_island_b = runif(1, 0.03, 0.3),
     island_a_raw = rnorm(n_islands, 0, 0.2),
-    island_b_raw = rnorm(n_islands, 0, 0.2),
     
-    sigma_cohort = runif(1, 0.01, 0.12),
-    u_cohort = c(NA, u_start[2:n_cohort])
+    sigma_time = runif(1, 0.3, 1.0),
+    u_time = rnorm(n_time_blocks, 0, 0.10)
   )
 }
 
-inits_POL <- lapply(1:3, make_inits_POL)
+inits_POL <- lapply(1:2, make_inits_POL)
 
 ## ============================================================
-## 6. BUILD + CHECK MODEL
+## 7. BUILD MODEL
 ## ============================================================
 
 model_POL <- nimbleModel(
@@ -304,69 +328,94 @@ model_POL <- nimbleModel(
 )
 
 lp <- model_POL$calculate()
+
 cat("\nInitial log probability:", lp, "\n")
+
 if(!is.finite(lp)) stop("Initial log probability is not finite.")
 
 ## ============================================================
-## 7. CONFIGURE MCMC
+## 8. CONFIGURE MCMC
 ## ============================================================
 
 conf_POL <- configureMCMC(
   model_POL,
   monitors = c(
-    "a","b","mean.p",
-    "betaSEX","betaDENS_a","betaFEED_b","betaSPEC_b",
-    "sigma_island_a","sigma_island_b","island_a","island_b",
-    "sigma_cohort","u_cohort"
+    "a",
+    "b",
+    "mean.p",
+    "betaSEX",
+    "betaDENS_a",
+    "betaFEED_b",
+    "betaSPEC_b",
+    "sigma_island_a",
+    "island_a",
+    "sigma_time",
+    "u_time"
   ),
   enableWAIC = TRUE
 )
 
-## Baseline Gompertz
-conf_POL$removeSamplers(c("a","b"))
-conf_POL$addSampler(target = c("a","b"), type = "AF_slice")
+## Baseline Gompertz parameters
+conf_POL$removeSamplers(c("a", "b"))
+conf_POL$addSampler(target = c("a", "b"), type = "AF_slice")
 
-## Variance parameters
-for(v in c("sigma_island_a","sigma_island_b","sigma_cohort")) {
+## Hyperparameters
+for(v in c("sigma_island_a", "sigma_time")) {
   conf_POL$removeSamplers(v)
   conf_POL$addSampler(target = v, type = "slice")
 }
 
 ## Fixed effects
-for(v in c("betaSEX[1]","betaSEX[2]","betaDENS_a","betaFEED_b","betaSPEC_b")) {
+for(v in c("betaSEX[1]", "betaSEX[2]", "betaDENS_a", "betaFEED_b", "betaSPEC_b")) {
   conf_POL$removeSamplers(v)
   conf_POL$addSampler(target = v, type = "slice")
 }
 
-## Latent birth/lifespan
-for(i in 1:nind) {
-  conf_POL$removeSamplers(c(paste0("tB[",i,"]"), paste0("tstar[",i,"]")))
+## Latent birth + lifespan
+for(i in seq_len(nind)) {
+  
+  conf_POL$removeSamplers(
+    c(
+      paste0("tB[", i, "]"),
+      paste0("tstar[", i, "]")
+    )
+  )
+  
   conf_POL$addSampler(
-    target = c(paste0("tB[",i,"]"), paste0("tstar[",i,"]")),
+    target = c(
+      paste0("tB[", i, "]"),
+      paste0("tstar[", i, "]")
+    ),
     type = "AF_slice"
   )
 }
 
+## ============================================================
+## 9. BUILD + COMPILE
+## ============================================================
+
 mcmc_POL <- buildMCMC(conf_POL)
 
+cModel_POL <- compileNimble(
+  model_POL,
+  resetFunctions = TRUE
+)
+
+cMCMC_POL <- compileNimble(
+  mcmc_POL,
+  project = model_POL
+)
+
 ## ============================================================
-## 8. COMPILE
+## 10. TEST RUN
 ## ============================================================
 
-cModel_POL <- compileNimble(model_POL, resetFunctions = TRUE)
-cMCMC_POL <- compileNimble(mcmc_POL, project = model_POL)
-
-
-## ============================================================
-## 9. TEST RUN
-## ============================================================
-
-run_POL_test <- runMCMC(
+run_POL_test3 <- runMCMC(
   cMCMC_POL,
-  niter = 100000,
-  nburnin = 30000,
-  nchains = 3,
-  thin = 10,
+  niter = 50000,
+  nburnin = 12000,
+  nchains = 2,
+  thin = 1,
   inits = inits_POL,
   setSeed = TRUE,
   samplesAsCodaMCMC = TRUE,
@@ -375,33 +424,85 @@ run_POL_test <- runMCMC(
   progressBar = TRUE
 )
 
-saveRDS(run_POL_test, "Model_PaceOfLife_TEST_samples.rds")
+## ============================================================
+## 11. SAVE
+## ============================================================
 
+saveRDS(
+  run_POL_test3,
+  "Model_PaceOfLife_5yr_noIslandB_TEST_samples.rds"
+)
 
 ## ============================================================
-## 10. DIAGNOSTICS
+## 12. MAIN DIAGNOSTICS
 ## ============================================================
 
 main_pars <- c(
-  "a","b","betaSEX",
-  "betaDENS_a","betaFEED_b","betaSPEC_b",
-  "sigma_island_a","sigma_island_b","sigma_cohort","mean.p"
+  "a",
+  "b",
+  "betaSEX",
+  "betaDENS_a",
+  "betaFEED_b",
+  "betaSPEC_b",
+  "sigma_island_a",
+  "sigma_time",
+  "mean.p"
 )
 
-print(MCMCsummary(run_POL_test$samples, params = main_pars))
-print(run_POL_test$WAIC)
+cat("\nMAIN PARAMETER SUMMARY\n")
 
-cat("\nResidual island effects:\n")
-print(MCMCsummary(run_POL_test$samples, params = c("island_a","island_b")))
-
-cat("\nTemporal cohort effects:\n")
-print(MCMCsummary(run_POL_test$samples, params = "u_cohort"))
-
-mcmcplot(run_POL_test$samples, parms = main_pars)
-
+print(
+  MCMCsummary(
+    run_POL_test3$samples,
+    params = main_pars
+  )
+)
 
 ## ============================================================
-## 11. FINAL RUN - ONLY AFTER TEST LOOKS GOOD
+## 13. TEMPORAL EFFECTS
+## ============================================================
+
+cat("\nTEMPORAL 5-YEAR EFFECTS\n")
+
+print(
+  MCMCsummary(
+    run_POL_test3$samples,
+    params = "u_time"
+  )
+)
+
+## ============================================================
+## 14. RESIDUAL ISLAND EFFECT ON a
+## ============================================================
+
+cat("\nRESIDUAL ISLAND EFFECT ON a\n")
+
+print(
+  MCMCsummary(
+    run_POL_test3$samples,
+    params = "island_a"
+  )
+)
+
+## ============================================================
+## 15. WAIC
+## ============================================================
+
+cat("\nWAIC\n")
+print(run_POL_test3$WAIC)
+
+## ============================================================
+## 16. TRACE PLOTS
+## ============================================================
+
+mcmcplot(
+  run_POL_test3$samples,
+  parms = main_pars
+)
+
+## ============================================================
+## 17. FINAL LONG RUN
+## Only run if the test converges adequately
 ## ============================================================
 
 # run_POL <- runMCMC(
@@ -418,6 +519,17 @@ mcmcplot(run_POL_test$samples, parms = main_pars)
 #   progressBar = TRUE
 # )
 #
-# saveRDS(run_POL, "Model_PaceOfLife_samples.rds")
-# print(MCMCsummary(run_POL$samples))
-# print(run_POL$WAIC)
+# saveRDS(
+#   run_POL,
+#   "Model_PaceOfLife_5yr_noIslandB_samples.rds"
+# )
+#
+# print(
+#   MCMCsummary(
+#     run_POL$samples
+#   )
+# )
+#
+# print(
+#   run_POL$WAIC
+# )

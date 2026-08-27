@@ -1,0 +1,17 @@
+island,density_source,n_years,first_year,last_year
+Bitter,Island mean imputation,63,1946,2017
+Bitter,Observed survey-year MNA,11,2006,2019
+FFRC,Island mean imputation,60,1946,2015
+FFRC,Observed survey-year MNA,14,2001,2019
+Gaulin,Island mean imputation,54,1946,2011
+Gaulin,Observed survey-year MNA,20,1998,2019
+Leaf,Island mean imputation,44,1946,2014
+Leaf,Observed survey-year MNA,30,1980,2019
+NAdder,Island mean imputation,66,1946,2017
+NAdder,Observed survey-year MNA,8,2006,2019
+Noddy,Island mean imputation,66,1946,2017
+Noddy,Observed survey-year MNA,8,2006,2019
+UCay,Island mean imputation,45,1946,2014
+UCay,Observed survey-year MNA,29,1980,2019
+WhiteB,Island mean imputation,65,1946,2017
+WhiteB,Observed survey-year MNA,9,2006,2019
