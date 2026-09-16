@@ -11,7 +11,7 @@
 
 
 
-<title>Iguana_PaceOfLife_Model_Status_Coauthor_Current</title>
+<title>Iguana_PaceOfLife_Coauthor_Model_Framework_Concise</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -352,1466 +352,501 @@ display: none;
 </div>
 
 
-<div id="iguana-pace-of-life-survival-modelling-current-status-model-development-preliminary-results-and-final-checks" class="section level1">
-<h1>Iguana pace-of-life survival modelling: current status, model
-development, preliminary results and final checks</h1>
-<div id="purpose-of-this-note" class="section level2">
-<h2>Purpose of this note</h2>
-<p>This document summarises the current state of the iguana
-survival/senescence analysis, including:</p>
-<ul>
-<li>the biological questions being addressed;</li>
-<li>the sequence of modelling decisions that led to the present
-model;</li>
-<li>the treatment of uncertain birth and death times;</li>
-<li>the reference-age Gompertz reparameterisation;</li>
-<li>the treatment of sex, supplementary feeding, cohort density, island
-effects and temporal effects;</li>
-<li>the preliminary results obtained so far;</li>
-<li>the recent audit of the cohort-density covariate;</li>
-<li>the small extension now being tested in the latest model;</li>
-<li>the remaining checks required before treating the analysis as
-final.</li>
-</ul>
-<p>The overall aim is to separate two biologically distinct components
-of adult mortality:</p>
+<div id="iguana-pace-of-life-survival-model" class="section level1">
+<h1>Iguana pace-of-life survival model</h1>
+<div id="current-modelling-framework-rationale-and-biological-interpretation" class="section level2">
+<h2>Current modelling framework, rationale and biological
+interpretation</h2>
+<p><strong>Status:</strong> Candidate primary model structure following
+model and data audits. Results below are from the current
+100,000-iteration development fit; the intention is to agree the
+biological/model structure with co-authors before running the definitive
+longer MCMC.</p>
+<hr />
+</div>
+<div id="aim" class="section level2">
+<h2>1. Aim</h2>
+<p>The central question is whether individual and cohort-level
+conditions are associated with variation in <strong>pace of
+life</strong>, separating two components of mortality:</p>
 <ol style="list-style-type: decimal">
-<li><strong>mortality level at a representative adult age</strong>,
-and<br />
-</li>
-<li><strong>the rate at which mortality increases with age (actuarial
-senescence)</strong>.</li>
+<li><strong>adult mortality level</strong>, represented by mortality
+hazard at age 10 (<span class="math inline">\(a_{10}\)</span>); and</li>
+<li><strong>actuarial senescence</strong>, represented by the Gompertz
+ageing parameter (<span class="math inline">\(b\)</span>), which
+describes how rapidly mortality increases with age.</li>
 </ol>
-<p>The main biological predictors of interest are:</p>
+<p>The current model is therefore designed to ask:</p>
 <ul>
-<li><strong>sex</strong>;</li>
-<li><strong>cohort density</strong>;</li>
-<li><strong>supplementary feeding</strong>.</li>
+<li>Do males and females differ in adult mortality and/or the rate of
+senescence?</li>
+<li>Do cohorts born in unusually high- or low-density years for their
+own island differ in subsequent adult mortality and senescence?</li>
+<li>Is there a long-term change in adult mortality among birth
+cohorts?</li>
+<li>Is there residual variation among islands and among cohort periods
+after these measured effects are accounted for?</li>
 </ul>
-<p>The latest model is currently running as a 100,000-iteration
-development fit after revising the cohort-density construction to reduce
-bias associated with the early years of monitoring.</p>
-<p>The numerical posterior results presented below refer to the
-immediately preceding 100,000-iteration model, before that density
-correction. They are therefore <strong>preliminary</strong>, but they
-provide the benchmark against which the current run will be
-compared.</p>
+<p>The emphasis is on estimating <strong>associations with mortality
+trajectories</strong>, rather than assigning causal effects to density
+or other environmental variables.</p>
 <hr />
 </div>
-</div>
-<div id="data-and-latent-life-history-structure" class="section level1">
-<h1>1. Data and latent life-history structure</h1>
-<p>The current analysis contains <strong>2,937 individuals</strong> from
-eight island populations.</p>
-<p>The model explicitly accounts for uncertainty in both birth and death
-time.</p>
-<p>This is essential because:</p>
-<ul>
-<li>many animals entered the monitoring programme after birth;</li>
-<li>birth year is often not known exactly;</li>
-<li>many individuals were last seen alive rather than observed
-dying;</li>
-<li>study entry occurred at different times among islands.</li>
-</ul>
-<p>The model therefore treats birth time and, where appropriate, death
-time as latent variables rather than fixing them to a single guessed
-year.</p>
-<hr />
-</div>
-<div id="birth-time-reconstruction" class="section level1">
-<h1>2. Birth-time reconstruction</h1>
-<p>Birth information comes from three levels of evidence.</p>
-<div id="known-age-individuals" class="section level2">
-<h2>2.1 Known-age individuals</h2>
-<p>For <strong>597 individuals</strong>, age information gives a
-relatively narrow birth interval.</p>
-</div>
-<div id="svl-informed-birth-intervals" class="section level2">
-<h2>2.2 SVL-informed birth intervals</h2>
-<p>For animals without known age, first recorded snout–vent length (SVL)
-is used to constrain plausible age.</p>
-<p>Quantile regressions relating age to SVL are used to define lower and
-upper plausible ages, which are then translated into birth-year
-intervals.</p>
-<p>This provides standard SVL-informed birth intervals for <strong>2,312
-individuals</strong>.</p>
-<p>Three additional individuals produced an SVL-derived birth interval
-that conflicted with an earlier known capture.</p>
-<p>For those animals, first capture is treated as hard evidence that the
-animal was already alive, so the inferred birth window is constrained
-accordingly.</p>
-</div>
-<div id="individuals-without-usable-svl-information" class="section level2">
-<h2>2.3 Individuals without usable SVL information</h2>
-<p>A further <strong>25 individuals</strong> lack both known age and
-usable first-SVL information.</p>
-<p>Their birth intervals are therefore much broader.</p>
-<p>In total, <strong>28 individuals</strong> are flagged as having
-particularly weak or adjusted birth histories:</p>
-<ul>
-<li>25 with no usable SVL information;</li>
-<li>3 with an SVL/first-capture conflict.</li>
-</ul>
-<p>These 28 individuals are retained in the primary analysis but will be
-removed in a targeted sensitivity analysis.</p>
-<hr />
-</div>
-</div>
-<div id="correction-to-an-earlier-birthdeath-rule" class="section level1">
-<h1>3. Correction to an earlier birth/death rule</h1>
-<p>During the model audit, an important issue was identified in the
-earlier data-preparation workflow.</p>
-<p>A previous rule shortened the upper birth interval whenever it
-overlapped the upper death/censoring interval.</p>
-<p>This affected <strong>23 individuals</strong>.</p>
-<p>All 23 were subsequently shown to be <strong>right-censored
-individuals</strong>.</p>
-<p>For a right-censored individual, the censoring date means only that
-the individual was known to be alive up to that point. It is not a death
-date.</p>
-<p>There was therefore no justification for altering the birth interval
-merely because it overlapped the censoring boundary.</p>
-<p>The current workflow reconstructs birth intervals directly and does
-not apply that blanket adjustment.</p>
-<p>After the correction:</p>
-<ul>
-<li>23 birth intervals were restored by one year;</li>
-<li>all 23 were right-censored animals;</li>
-<li>no genuinely impossible interval-censored birth/death histories
-remained.</li>
-</ul>
-<p>This revised treatment is retained in all current models.</p>
-<hr />
-</div>
-<div id="survival-model" class="section level1">
-<h1>4. Survival model</h1>
-<p>The survival process is modelled using a Gompertz hazard.</p>
-<p>The conventional form is</p>
+<div id="core-survival-framework" class="section level2">
+<h2>2. Core survival framework</h2>
+<p>Birth and death are incompletely observed for many individuals, so
+the model retains uncertainty in the life history rather than assigning
+a single estimated age or lifespan.</p>
+<p>Birth time is treated as latent within an individual-specific
+interval informed by known age where available and by the SVL-age
+relationship otherwise. Death is handled using interval- or
+right-censoring, and the survival likelihood is left-truncated so that
+animals already alive when monitoring began are correctly conditioned on
+having survived to the observable period.</p>
+<p>A detection component also accounts for opportunities to observe an
+animal while it was alive. Thus uncertainty in birth date, lifespan and
+observation history is propagated into the mortality parameters and
+cohort covariates.</p>
+<p>The current analysis includes <strong>2,937 individuals from eight
+islands</strong>.</p>
+<div id="why-use-mortality-at-age-10" class="section level3">
+<h3>Why use mortality at age 10?</h3>
+<p>The standard Gompertz model can be written as</p>
 <p><span class="math display">\[
 h(t)=a_0\exp(bt),
 \]</span></p>
-<p>where:</p>
-<ul>
-<li><span class="math inline">\(a_0\)</span> is the extrapolated
-mortality hazard at age zero;</li>
-<li><span class="math inline">\(b\)</span> controls the increase in
-mortality with age.</li>
-</ul>
-<p>The parameter <span class="math inline">\(b\)</span> is therefore the
-key parameter describing <strong>actuarial senescence</strong>.</p>
-<hr />
-</div>
-<div id="why-the-gompertz-model-was-reparameterised" class="section level1">
-<h1>5. Why the Gompertz model was reparameterised</h1>
-<p>The original analyses used the age-zero Gompertz intercept <span class="math inline">\(a_0\)</span>.</p>
-<p>That is mathematically valid, but it is not ideal for these data
-because most information comes from adult animals.</p>
-<p>Consequently, <span class="math inline">\(a_0\)</span> is estimated
-by extrapolating away from the best-supported part of the life
-course.</p>
-<p>This generated strong compensation between:</p>
-<ul>
-<li>mortality level;</li>
-<li>senescence rate.</li>
-</ul>
-<p>To improve biological interpretation and posterior geometry, the
-model was rewritten around age 10:</p>
+<p>but <span class="math inline">\(a_0\)</span> is mortality
+extrapolated to age zero and can be strongly correlated with <span class="math inline">\(b\)</span>. We instead use the mathematically
+equivalent reference-age form</p>
 <p><span class="math display">\[
 h(t)=a_{10}\exp[b(t-10)].
 \]</span></p>
-<p>Here:</p>
+<p>Age 10 was chosen <strong>before interpreting the current biological
+effects</strong>, because it lies within a well-supported part of the
+age distribution:</p>
 <ul>
-<li><span class="math inline">\(a_{10}\)</span> is mortality hazard at
-age 10;</li>
-<li><span class="math inline">\(b\)</span> is still the Gompertz
-senescence parameter.</li>
+<li>median estimated age at first observation: <strong>10.5
+years</strong>;</li>
+<li>median age at last observation: <strong>15.5 years</strong>;</li>
+<li>median midpoint of observed age ranges: <strong>13.5
+years</strong>;</li>
+<li>among known-birth animals, the median midpoint of the observed age
+range was <strong>9.5 years</strong>.</li>
 </ul>
-<p>The conventional age-zero parameter is recovered internally as</p>
-<p><span class="math display">\[
-a_0=a_{10}\exp(-10b).
-\]</span></p>
-<p>Thus this is not a different survival model; it is a more
-interpretable parameterisation of the same Gompertz hazard.</p>
-<p>Age 10 was chosen because it lies within a strongly represented part
-of the observed life course.</p>
-<p>The reparameterisation worked well.</p>
-<p>In the latest completed development model,</p>
-<p><span class="math display">\[
-\mathrm{cor}(\log a_{10,\mathrm{fed}},\log b_{\mathrm{fed}})
-=-0.041,
-\]</span></p>
-<p>showing that adult mortality level and senescence are now almost
-completely separated statistically.</p>
+<p>Thus <span class="math inline">\(a_{10}\)</span> is a meaningful
+adult mortality parameter rather than an extrapolated juvenile
+intercept. The reparameterisation also successfully separated the two
+Gompertz components: in the no-feeding reference-age model the posterior
+correlation between <span class="math inline">\(\log(a_{10})\)</span>
+and <span class="math inline">\(\log(b)\)</span> was only
+<strong>0.011</strong>.</p>
 <hr />
 </div>
-<div id="current-biological-model" class="section level1">
-<h1>6. Current biological model</h1>
-<p>The focal predictors are allowed to affect both Gompertz
-components.</p>
+</div>
+<div id="why-the-current-covariate-structure-was-chosen" class="section level2">
+<h2>3. Why the current covariate structure was chosen</h2>
+<div id="sex" class="section level3">
+<h3>Sex</h3>
+<p>Sex is included on both components of the mortality trajectory:</p>
+<p><span class="math display">\[
+\log(a_{10,i}) \supset \beta_{\mathrm{sex},a}\,\mathrm{sex}_i
+\]</span></p>
+<p>and</p>
+<p><span class="math display">\[
+\log(b_i) \supset \beta_{\mathrm{sex},b}\,\mathrm{sex}_i.
+\]</span></p>
+<p>Females are the reference category (0) and males are coded 1. This
+allows sex to affect both adult mortality level and the subsequent rate
+of actuarial ageing.</p>
+</div>
+<div id="cohort-density-within-island-rather-than-between-island" class="section level3">
+<h3>Cohort density: within-island rather than between-island</h3>
+<p>Density is derived from minimum-number-alive (MNA) by island and
+year, divided by usable habitat area and analysed on the <span class="math inline">\(\log(1+\mathrm{density})\)</span> scale.</p>
+<p>Auditing the raw MNA series showed a pronounced <strong>monitoring
+start-up/ascertainment ramp</strong> on several islands: the earliest
+survey years often contained very low MNA and high proportions of newly
+encountered animals. We therefore do not treat the first five survey
+years on an island as reliable annual density estimates. Annual density
+deviations are used from survey year 6 onward.</p>
+<p>A second audit showed that, among trusted established observations,
+<strong>88.7% of the variation in density was between islands and only
+11.3% was within islands through time</strong>. An overall density
+covariate would therefore be dominated by comparisons such as “dense
+island versus sparse island”, potentially conflating density with
+persistent island differences.</p>
+<p>The current model instead uses an island-centred density
+variable:</p>
+<p><span class="math display">\[
+D^{W}_{j,t}
+=
+\log(1+D_{j,t})
+-
+\overline{\log(1+D)}_j.
+\]</span></p>
+<p>This asks a much cleaner question:</p>
+<blockquote>
+<p><strong>For a given island, do animals from cohorts born in a denser-
+or sparser-than-usual established year show different subsequent
+mortality trajectories?</strong></p>
+</blockquote>
+<p>The deviation is standardised using the variation in trusted
+established annual observations. A +1 unit change therefore represents a
+<strong>one-SD increase in density relative to that island’s own typical
+density</strong>.</p>
+<p>For pre-monitoring years, the five start-up survey years and
+unsurveyed gaps, the within-island deviation is set to zero. This does
+<strong>not</strong> assert that density was exactly average; it means
+that we do not invent evidence for an annual departure from the island
+mean where reliable annual information is unavailable. This is
+deliberately conservative and may attenuate the estimated density
+effect.</p>
+</div>
+<div id="long-term-temporal-trend" class="section level3">
+<h3>Long-term temporal trend</h3>
+<p>The earlier model allowed cohort periods to differ through
+exchangeable random effects on <span class="math inline">\(a_{10}\)</span>. Those effects revealed a striking
+long-term pattern: older cohorts had much higher estimated mortality
+levels and recent cohorts much lower mortality levels. A descriptive
+line through those period estimates explained about <strong>88%</strong>
+of their variation.</p>
+<p>The current model therefore separates:</p>
+<ol style="list-style-type: decimal">
+<li>an explicit linear <strong>birth-cohort trend</strong>, expressed
+per decade, and</li>
+<li>residual cohort-period effects around that trend.</li>
+</ol>
 <p>Conceptually,</p>
 <p><span class="math display">\[
 \log(a_{10,i}) =
 \alpha_a
-+ \beta_{\mathrm{sex},a}X_{\mathrm{sex},i}
-+ \beta_{\mathrm{dens},a}D_{j,t}
-+ \beta_{\mathrm{feed},a}X_{\mathrm{feed},j}
-+ u_{\mathrm{time},t}
-+ u_{\mathrm{island},j},
++\beta_{\mathrm{sex},a}X_i
++\beta_{\mathrm{dens},a}D^W_{j,t}
++\beta_{\mathrm{time}}T_i
++u_{\mathrm{period},t}
++u_{\mathrm{island},j}.
+\]</span></p>
+<p>The temporal trend is applied to mortality level at age 10. Residual
+period effects retain flexibility for particular historical periods that
+depart from the long-term trend.</p>
+<p>This formulation substantially reduced the large monotonic pattern
+previously carried by the period random effects. After adding the trend,
+most residual temporal effects were approximately between <strong>-0.65
+and +0.63</strong> on the log-hazard scale rather than spanning roughly
+<strong>+3 to -2.8</strong> from old to recent cohorts. There remains
+some structured period variation, particularly around the 1970s and late
+1980s-1990s, but the broad secular pattern is now represented explicitly
+rather than being forced into exchangeable random effects.</p>
+</div>
+<div id="residual-island-variation" class="section level3">
+<h3>Residual island variation</h3>
+<p>A random island effect remains on <span class="math inline">\(a_{10}\)</span> to account for persistent
+differences in adult mortality among the eight island populations that
+are not explained by sex, within-island cohort density or temporal
+effects.</p>
+<p>The primary model does not currently include an unrestricted island
+random effect on <span class="math inline">\(b\)</span>. With only eight
+islands, such an effect is considerably harder to estimate and would
+represent an additional hypothesis about persistent population
+differences in senescence. It remains a possible publication-stage
+sensitivity rather than part of the current primary structure.</p>
+<hr />
+</div>
+</div>
+<div id="why-feeding-is-not-in-the-candidate-primary-model" class="section level2">
+<h2>4. Why feeding is not in the candidate primary model</h2>
+<p>Supplementary feeding was initially considered because islands can be
+classified broadly as fed or unfed. However, the exposure is applied at
+the island/block level rather than independently to animals, giving only
+five nominally fed and three unfed island blocks.</p>
+<p>More importantly, the binary classification may be a poor proxy for
+actual exposure. Islands differ in size, access, tourist visitation and
+iguana habituation, so not all animals on a nominally fed island are
+likely to experience equivalent supplementation.</p>
+<p>This became both a biological and statistical concern. When feeding
+was included, its posterior was broad and the senescence contrast mixed
+poorly. We therefore fitted the same model without feeding. Removing it
+produced <strong>almost no change</strong> in the sex or density
+estimates. For example:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Effect</th>
+<th align="right">Feeding included</th>
+<th align="right">Feeding removed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sex -&gt; <span class="math inline">\(a_{10}\)</span></td>
+<td align="right">0.366</td>
+<td align="right">0.365</td>
+</tr>
+<tr class="even">
+<td>Sex -&gt; <span class="math inline">\(b\)</span></td>
+<td align="right">0.175</td>
+<td align="right">0.175</td>
+</tr>
+<tr class="odd">
+<td>Density -&gt; <span class="math inline">\(a_{10}\)</span></td>
+<td align="right">-1.15</td>
+<td align="right">-1.15</td>
+</tr>
+<tr class="even">
+<td>Density -&gt; <span class="math inline">\(b\)</span></td>
+<td align="right">-0.090</td>
+<td align="right">-0.092</td>
+</tr>
+</tbody>
+</table>
+<p>Thus feeding was not acting as an important adjustment variable for
+the main relationships, while removing it made the model cleaner and
+more defensible. Feeding can still be reported as an exploratory
+analysis if there is strong biological interest from the co-author
+group.</p>
+<hr />
+</div>
+<div id="current-candidate-model" class="section level2">
+<h2>5. Current candidate model</h2>
+<p>The current candidate primary model is:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\log(a_{10,i}) =\;&amp;
+\alpha_a
++\beta_{\mathrm{sex},a}\mathrm{sex}_i
++\beta_{\mathrm{dens},a}D^W_{j,t}\\
+&amp;+\beta_{\mathrm{time}}T_i
++u_{\mathrm{period},t}
++u_{\mathrm{island},j},
+\end{aligned}
 \]</span></p>
 <p>and</p>
 <p><span class="math display">\[
-\log(b_i) =
+\log(b_i)=
 \alpha_b
-+ \beta_{\mathrm{sex},b}X_{\mathrm{sex},i}
-+ \beta_{\mathrm{dens},b}D_{j,t}
-+ \beta_{\mathrm{feed},b}X_{\mathrm{feed},j}.
++\beta_{\mathrm{sex},b}\mathrm{sex}_i
++\beta_{\mathrm{dens},b}D^W_{j,t}.
 \]</span></p>
-<p>The current coding is deliberately simple:</p>
-<ul>
-<li><strong>female = 0, male = 1</strong>;</li>
-<li><strong>unfed = 0, fed = 1</strong>;</li>
-<li>cohort density is a standardised continuous variable.</li>
-</ul>
-<p>The latest implementation retains the well-informed fed group as the
-reference group for the Gompertz intercepts, while the feeding contrast
-itself is still the ordinary fed-versus-unfed categorical
-comparison.</p>
+<p>The individual mortality trajectory is then</p>
+<p><span class="math display">\[
+h_i(t)=a_{10,i}\exp[b_i(t-10)].
+\]</span></p>
+<p>In words, the model separates differences in <strong>adult mortality
+level</strong> from differences in the <strong>rate of ageing</strong>,
+while allowing both sex and within-population cohort density to
+influence each component. Long-term cohort change, shorter-term period
+departures and persistent island heterogeneity are modelled separately
+on adult mortality.</p>
 <hr />
 </div>
-<div id="why-the-focal-variables-are-included-on-both-gompertz-components" class="section level1">
-<h1>7. Why the focal variables are included on both Gompertz
-components</h1>
-<p>An important part of the model-development process was moving away
-from assigning biological predictors to only one mortality
-component.</p>
-<p>There is no strong biological reason to assume in advance that sex,
-density or feeding can influence mortality level but not senescence, or
-vice versa.</p>
-<p>The primary model therefore asks two separate questions for each
-focal predictor:</p>
-<ol style="list-style-type: decimal">
-<li>does it alter mortality at age 10?</li>
-<li>does it alter the rate at which mortality increases with age?</li>
-</ol>
-<p>This is central to the pace-of-life interpretation.</p>
-<p>A predictor acting on <span class="math inline">\(b\)</span> is
-inherently an <strong>age-dependent effect</strong>, because it changes
-the slope of the log-hazard with age.</p>
-<hr />
-</div>
-<div id="sex" class="section level1">
-<h1>8. Sex</h1>
-<p>Sex is entered directly as:</p>
-<ul>
-<li>female = 0;</li>
-<li>male = 1.</li>
-</ul>
-<p>It is allowed to influence both:</p>
-<ul>
-<li>mortality at age 10;</li>
-<li>actuarial senescence.</li>
-</ul>
-<p>This means that the model can distinguish a simple adult mortality
-difference from a difference in the ageing trajectory itself.</p>
-<hr />
-</div>
-<div id="supplementary-feeding" class="section level1">
-<h1>9. Supplementary feeding</h1>
-<p>Feeding is treated as a binary island-level predictor:</p>
-<ul>
-<li>unfed = 0;</li>
-<li>fed = 1.</li>
-</ul>
-<p>The important design point is that feeding is applied at the
-<strong>island/block level</strong> rather than individually.</p>
-<p>Five islands are fed and three are unfed.</p>
-<p>Therefore, thousands of individual iguanas do not constitute
-thousands of independent feeding replicates.</p>
-<p>The effective replication for the feeding comparison is the number of
-islands.</p>
-<p>This limits precision and means that feeding results should be
-described as <strong>island-level associations</strong>, rather than as
-straightforward individual-level causal treatment effects.</p>
-<p>The fed islands are much better represented for estimating the
-Gompertz senescence trajectory than the three unfed islands, which
-explains much of the uncertainty in the feeding contrast.</p>
-<hr />
-</div>
-<div id="island-and-temporal-effects" class="section level1">
-<h1>10. Island and temporal effects</h1>
-<p>The model includes two additional sources of heterogeneity on
-mortality at age 10.</p>
-<div id="residual-island-effect" class="section level2">
-<h2>10.1 Residual island effect</h2>
-<p>Each island has a residual effect on <span class="math inline">\(a_{10}\)</span>.</p>
-<p>This represents persistent island-level mortality differences not
-explained by:</p>
-<ul>
-<li>feeding;</li>
-<li>density;</li>
-<li>sex.</li>
-</ul>
-<p>The island effects are constrained to average zero.</p>
-</div>
-<div id="shared-temporal-cohort-effect" class="section level2">
-<h2>10.2 Shared temporal cohort effect</h2>
-<p>The model also contains a temporal birth-cohort effect on <span class="math inline">\(a_{10}\)</span>.</p>
-<p>This effect is <strong>shared across all islands</strong>.</p>
-<p>It represents broad environmental or historical conditions affecting
-animals born in the same general period.</p>
-<p>This is conceptually different from density.</p>
-<p>The structure is therefore:</p>
-<ul>
-<li><strong>island effect:</strong> varies among islands, constant
-through time;</li>
-<li><strong>time effect:</strong> varies through time, common to all
-islands;</li>
-<li><strong>density:</strong> varies jointly by island and cohort
-year.</li>
-</ul>
-<p>That distinction has become particularly important during the recent
-density audit.</p>
-<hr />
-</div>
-</div>
-<div id="temporal-pooling" class="section level1">
-<h1>11. Temporal pooling</h1>
-<p>The original temporal model used separate five-year birth-cohort
-blocks.</p>
-<p>An audit showed very little support for several early historical
-blocks.</p>
-<p>The approximate birth-window midpoint support was:</p>
-<table>
+<div id="what-the-current-model-is-telling-us" class="section level2">
+<h2>6. What the current model is telling us</h2>
+<p>The current 100k development fit gives a coherent biological
+pattern.</p>
+<table style="width:100%;">
+<colgroup>
+<col width="16%" />
+<col width="22%" />
+<col width="22%" />
+<col width="22%" />
+<col width="16%" />
+</colgroup>
 <thead>
 <tr class="header">
-<th>Cohort period</th>
-<th align="right">Number of midpoint assignments</th>
+<th>Effect</th>
+<th align="right">Median <span class="math inline">\(\beta\)</span></th>
+<th align="right">95% credible interval</th>
+<th align="right">Multiplicative effect</th>
+<th>Interpretation</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>1946–1950</td>
-<td align="right">0</td>
+<td>Male -&gt; age-10 mortality</td>
+<td align="right">0.315</td>
+<td align="right">0.034 to 0.581</td>
+<td align="right">1.37</td>
+<td>~37% higher age-10 mortality in males</td>
 </tr>
 <tr class="even">
-<td>1951–1955</td>
-<td align="right">0</td>
+<td>Male -&gt; senescence</td>
+<td align="right">0.216</td>
+<td align="right">0.092 to 0.349</td>
+<td align="right">1.24</td>
+<td>~24% faster actuarial senescence in males</td>
 </tr>
 <tr class="odd">
-<td>1956–1960</td>
-<td align="right">9</td>
+<td>+1 SD within-island density -&gt; age-10 mortality</td>
+<td align="right">-0.447</td>
+<td align="right">-0.632 to -0.237</td>
+<td align="right">0.64</td>
+<td>~36% lower age-10 mortality</td>
 </tr>
 <tr class="even">
-<td>1961–1965</td>
-<td align="right">29</td>
-</tr>
-<tr class="odd">
-<td>1966–1970</td>
-<td align="right">54</td>
-</tr>
-<tr class="even">
-<td>1971–1975</td>
-<td align="right">79</td>
-</tr>
-<tr class="odd">
-<td>1976–1980</td>
-<td align="right">106</td>
-</tr>
-<tr class="even">
-<td>1981–1985</td>
-<td align="right">285</td>
-</tr>
-<tr class="odd">
-<td>1986–1990</td>
-<td align="right">342</td>
-</tr>
-<tr class="even">
-<td>1991–1995</td>
-<td align="right">473</td>
-</tr>
-<tr class="odd">
-<td>1996–2000</td>
-<td align="right">552</td>
-</tr>
-<tr class="even">
-<td>2001–2005</td>
-<td align="right">466</td>
-</tr>
-<tr class="odd">
-<td>2006–2010</td>
-<td align="right">334</td>
-</tr>
-<tr class="even">
-<td>2011–2019</td>
-<td align="right">208</td>
+<td>+1 SD within-island density -&gt; senescence</td>
+<td align="right">-0.131</td>
+<td align="right">-0.219 to -0.030</td>
+<td align="right">0.88</td>
+<td>~12% lower actuarial senescence</td>
 </tr>
 </tbody>
 </table>
-<p>The temporal structure was therefore simplified to:</p>
-<ol style="list-style-type: decimal">
-<li>1946–1965<br />
-</li>
-<li>1966–1970<br />
-</li>
-<li>1971–1975<br />
-</li>
-<li>1976–1980<br />
-</li>
-<li>1981–1985<br />
-</li>
-<li>1986–1990<br />
-</li>
-<li>1991–1995<br />
-</li>
-<li>1996–2000<br />
-</li>
-<li>2001–2005<br />
-</li>
-<li>2006–2010<br />
-</li>
-<li>2011–2019</li>
-</ol>
-<p>This pooling was based on data support, not on the direction of any
-biological coefficient.</p>
-<hr />
-</div>
-<div id="effect-of-temporal-pooling" class="section level1">
-<h1>12. Effect of temporal pooling</h1>
-<p>The key biological estimates were almost unchanged after pooling.</p>
-<p>For example:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Parameter</th>
-<th align="right">Previous model</th>
-<th align="right">Time-pooled model</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>sex effect on <span class="math inline">\(a_{10}\)</span></td>
-<td align="right">0.439</td>
-<td align="right">0.444</td>
-</tr>
-<tr class="even">
-<td>sex effect on <span class="math inline">\(b\)</span></td>
-<td align="right">0.128</td>
-<td align="right">0.131</td>
-</tr>
-<tr class="odd">
-<td>density effect on <span class="math inline">\(a_{10}\)</span></td>
-<td align="right">0.086</td>
-<td align="right">0.092</td>
-</tr>
-<tr class="even">
-<td>density effect on <span class="math inline">\(b\)</span></td>
-<td align="right">-0.163</td>
-<td align="right">-0.163</td>
-</tr>
-<tr class="odd">
-<td><span class="math inline">\(b\)</span> in the well-informed fed
-group</td>
-<td align="right">0.206</td>
-<td align="right">0.204</td>
-</tr>
-</tbody>
-</table>
-<p>This stability is encouraging.</p>
-<p>Pooling did not materially improve the temporal variance
-parameter:</p>
-<ul>
-<li>before pooling: <code>sigma_time</code> Rhat ≈ 1.13, ESS ≈ 90;</li>
-<li>after pooling: <code>sigma_time</code> Rhat ≈ 1.12, ESS ≈ 87.</li>
-</ul>
-<p>This indicates that the slow mixing of the temporal variance is not
-simply caused by sparse early blocks.</p>
-<p>The pooled structure is nevertheless retained because it better
-reflects the temporal resolution actually supported by the data.</p>
-<hr />
-</div>
-<div id="preliminary-results-from-the-latest-completed-100k-model" class="section level1">
-<h1>13. Preliminary results from the latest completed 100k model</h1>
-<p>The latest completed development model used:</p>
-<ul>
-<li>100,000 iterations;</li>
-<li>30,000 burn-in;</li>
-<li>3 chains;</li>
-<li>thin = 10.</li>
-</ul>
-<p>These results are the benchmark against which the current
-corrected-density model will be assessed.</p>
-<hr />
-</div>
-<div id="sex-effect-on-mortality-at-age-10" class="section level1">
-<h1>14. Sex effect on mortality at age 10</h1>
-<p>The estimated male-versus-female effect was:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{sex},a}=0.444
-\]</span></p>
-<p>with 95% credible interval:</p>
-<p><span class="math display">\[
-0.157,\ 0.739.
-\]</span></p>
-<p>On the multiplicative scale:</p>
-<p><span class="math display">\[
-\exp(0.444)=1.56.
-\]</span></p>
-<p>Thus males had an estimated mortality hazard at age 10 approximately
-<strong>56% higher than females</strong>, holding the remaining model
-terms constant.</p>
-<p>The 95% credible interval for the hazard ratio was approximately:</p>
-<p><span class="math display">\[
-1.17-2.09.
-\]</span></p>
-<p>The posterior probability of a positive effect was approximately:</p>
-<p><span class="math display">\[
-P(\beta_{\mathrm{sex},a}&gt;0)=0.999.
-\]</span></p>
-<p>This is currently one of the strongest and most stable results.</p>
-<hr />
-</div>
-<div id="sex-effect-on-actuarial-senescence" class="section level1">
-<h1>15. Sex effect on actuarial senescence</h1>
-<p>The estimated sex effect on <span class="math inline">\(b\)</span>
-was:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{sex},b}=0.132.
-\]</span></p>
-<p>The 95% credible interval was:</p>
-<p><span class="math display">\[
--0.022,\ 0.279.
-\]</span></p>
-<p>On the multiplicative scale:</p>
-<p><span class="math display">\[
-\exp(0.132)\approx1.14.
-\]</span></p>
-<p>Thus the posterior suggests that male senescence may be approximately
-<strong>14% faster</strong> than female senescence.</p>
-<p>The 95% interval on this ratio was approximately:</p>
-<p><span class="math display">\[
-0.98-1.32.
-\]</span></p>
-<p>The posterior probability that the effect is positive was
-approximately <strong>0.954</strong>.</p>
-<p>The current interpretation is therefore:</p>
-<blockquote>
-<p>Males show clear evidence of higher adult mortality, together with
-substantial but not yet conclusive evidence of faster actuarial
-senescence.</p>
-</blockquote>
-<hr />
-</div>
-<div id="preliminary-cohort-density-result-before-the-new-audit-correction" class="section level1">
-<h1>16. Preliminary cohort-density result before the new audit
-correction</h1>
-<p>The previous density covariate was based on island-year
-<strong>minimum number alive (MNA)</strong> divided by usable island
-area.</p>
-<p>Density was log-transformed and standardised before entering the
-model.</p>
-<p>The previous model produced little evidence that density affected
-mortality at age 10:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{dens},a}=0.093
-\]</span></p>
-<p>with 95% credible interval approximately:</p>
-<p><span class="math display">\[
--0.144,\ 0.328.
-\]</span></p>
-<p>However, the density effect on senescence was much stronger:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{dens},b}=-0.164.
-\]</span></p>
-<p>The 95% credible interval was:</p>
-<p><span class="math display">\[
--0.238,\ -0.082.
-\]</span></p>
-<p>On the multiplicative scale:</p>
-<p><span class="math display">\[
-\exp(-0.164)=0.849.
-\]</span></p>
-<p>This means that a one-standard-deviation increase in the previous
-cohort-density covariate was associated with an estimated <strong>15%
-lower senescence rate</strong>.</p>
-<p>The corresponding 95% interval for the senescence-rate multiplier was
-approximately:</p>
-<p><span class="math display">\[
-0.788-0.922.
-\]</span></p>
-<p>The posterior probability of a negative density effect was
-essentially 1.</p>
-<p>The parameter also mixed well:</p>
-<ul>
-<li>Rhat ≈ 1.01;</li>
-<li>ESS ≈ 961.</li>
-</ul>
-<p>This was therefore the strongest new result to emerge from the
-revised model structure.</p>
-<p>Because it was potentially important, the construction of the density
-covariate was audited before moving to the final long run.</p>
-<hr />
-</div>
-<div id="mna-does-not-assume-complete-detection" class="section level1">
-<h1>17. MNA does not assume complete detection</h1>
-<p>An important clarification is that MNA does <strong>not</strong>
-assume every individual on an island was detected during every
-survey.</p>
-<p>An animal is counted as known alive between its first and last
-recorded year, even if it was missed during intermediate surveys.</p>
-<p>MNA is therefore a conservative index of the minimum number known to
-have been alive.</p>
-<p>However, MNA is not automatically equivalent to true abundance.</p>
-<p>In particular, it can be biased low during the early years of a
-monitoring programme because animals that were already alive but had not
-yet been encountered do not enter the marked/known population until
-their first capture.</p>
-<p>This creates the possibility of an <strong>ascertainment
-ramp</strong>.</p>
-<hr />
-</div>
-<div id="density-audit-evidence-of-a-monitoring-start-up-effect" class="section level1">
-<h1>18. Density audit: evidence of a monitoring start-up effect</h1>
-<p>The audit showed strong evidence that several islands exhibit exactly
-this pattern.</p>
-<p>For the first ten survey years, the correlation between MNA and time
-since monitoring began was:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Island</th>
-<th align="right">Correlation between MNA and monitoring time</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Bitter</td>
-<td align="right">0.902</td>
-</tr>
-<tr class="even">
-<td>FFRC</td>
-<td align="right">0.948</td>
-</tr>
-<tr class="odd">
-<td>Gaulin</td>
-<td align="right">0.982</td>
-</tr>
-<tr class="even">
-<td>Leaf</td>
-<td align="right">0.917</td>
-</tr>
-<tr class="odd">
-<td>NAdder</td>
-<td align="right">-0.042</td>
-</tr>
-<tr class="even">
-<td>Noddy</td>
-<td align="right">0.672</td>
-</tr>
-<tr class="odd">
-<td>UCay</td>
-<td align="right">0.981</td>
-</tr>
-<tr class="even">
-<td>WhiteB</td>
-<td align="right">0.322</td>
-</tr>
-</tbody>
-</table>
-<p>At the same time, the fraction of MNA represented by newly
-encountered animals generally declined strongly through the first
-monitoring years.</p>
-<p>Examples of mean entrant fraction in survey years 1–3 versus year 6
-onward were:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Island</th>
-<th align="right">Years 1–3</th>
-<th align="right">Year 6+</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Bitter</td>
-<td align="right">0.851</td>
-<td align="right">0.449</td>
-</tr>
-<tr class="even">
-<td>FFRC</td>
-<td align="right">0.728</td>
-<td align="right">0.133</td>
-</tr>
-<tr class="odd">
-<td>Gaulin</td>
-<td align="right">0.572</td>
-<td align="right">0.235</td>
-</tr>
-<tr class="even">
-<td>Leaf</td>
-<td align="right">0.700</td>
-<td align="right">0.169</td>
-</tr>
-<tr class="odd">
-<td>NAdder</td>
-<td align="right">0.678</td>
-<td align="right">0.233</td>
-</tr>
-<tr class="even">
-<td>Noddy</td>
-<td align="right">0.872</td>
-<td align="right">0.698</td>
-</tr>
-<tr class="odd">
-<td>UCay</td>
-<td align="right">0.645</td>
-<td align="right">0.114</td>
-</tr>
-<tr class="even">
-<td>WhiteB</td>
-<td align="right">0.462</td>
-<td align="right">0.295</td>
-</tr>
-</tbody>
-</table>
-<p>Likewise, median MNA in the first three survey years versus survey
-year 6 onward was:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Island</th>
-<th align="right">Median MNA years 1–3</th>
-<th align="right">Median MNA year 6+</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Bitter</td>
-<td align="right">7</td>
-<td align="right">54</td>
-</tr>
-<tr class="even">
-<td>FFRC</td>
-<td align="right">5</td>
-<td align="right">89</td>
-</tr>
-<tr class="odd">
-<td>Gaulin</td>
-<td align="right">19</td>
-<td align="right">113</td>
-</tr>
-<tr class="even">
-<td>Leaf</td>
-<td align="right">2</td>
-<td align="right">211</td>
-</tr>
-<tr class="odd">
-<td>NAdder</td>
-<td align="right">53</td>
-<td align="right">54</td>
-</tr>
-<tr class="even">
-<td>Noddy</td>
-<td align="right">33</td>
-<td align="right">90</td>
-</tr>
-<tr class="odd">
-<td>UCay</td>
-<td align="right">52</td>
-<td align="right">162</td>
-</tr>
-<tr class="even">
-<td>WhiteB</td>
-<td align="right">51</td>
-<td align="right">80.5</td>
-</tr>
-</tbody>
-</table>
-<p>NAdder is an important exception, with little evidence of a large
-early MNA ramp.</p>
-<p>Taken together, the pattern on several other islands is consistent
-with the marked population accumulating through the early monitoring
-period rather than MNA immediately representing a stable proxy for true
-abundance.</p>
-<hr />
-</div>
-<div id="why-the-shared-temporal-effect-cannot-fully-solve-this-problem" class="section level1">
-<h1>19. Why the shared temporal effect cannot fully solve this
-problem</h1>
-<p>The model already contains a temporal cohort effect, but this is
-common across all islands.</p>
-<p>The MNA start-up problem is different.</p>
-<p>Monitoring began at different times on different islands.</p>
-<p>Therefore, an artificial density ramp associated with “years since
-monitoring began” occurs at different calendar dates on different
-islands.</p>
-<p>A single shared temporal effect cannot simply absorb this
-structure.</p>
-<p>This is exactly why density and time need to remain conceptually
-separate:</p>
-<ul>
-<li><strong>time:</strong> common environmental/historical variation
-across all islands;</li>
-<li><strong>density:</strong> local island × cohort-year demographic
-environment;</li>
-<li><strong>monitoring start-up:</strong> island-specific ascertainment
-process.</li>
-</ul>
-<p>The density covariate therefore needed to be revised directly.</p>
-<hr />
-</div>
-<div id="audit-of-observed-versus-imputed-density" class="section level1">
-<h1>20. Audit of observed versus imputed density</h1>
-<p>The audit also showed that many cohort years occur before direct
-annual MNA data are available.</p>
-<p>At the midpoint of each individual’s birth interval, the proportion
-receiving directly observed survey-year MNA was approximately:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Island</th>
-<th align="right">Observed MNA</th>
-<th align="right">Island-mean imputation</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Bitter</td>
-<td align="right">4%</td>
-<td align="right">96%</td>
-</tr>
-<tr class="even">
-<td>FFRC</td>
-<td align="right">33%</td>
-<td align="right">67%</td>
-</tr>
-<tr class="odd">
-<td>Gaulin</td>
-<td align="right">52%</td>
-<td align="right">48%</td>
-</tr>
-<tr class="even">
-<td>Leaf</td>
-<td align="right">68%</td>
-<td align="right">32%</td>
-</tr>
-<tr class="odd">
-<td>NAdder</td>
-<td align="right">6%</td>
-<td align="right">94%</td>
-</tr>
-<tr class="even">
-<td>Noddy</td>
-<td align="right">11%</td>
-<td align="right">89%</td>
-</tr>
-<tr class="odd">
-<td>UCay</td>
-<td align="right">46%</td>
-<td align="right">54%</td>
-</tr>
-<tr class="even">
-<td>WhiteB</td>
-<td align="right">10%</td>
-<td align="right">90%</td>
-</tr>
-</tbody>
-</table>
-<p>Across complete possible birth intervals, the mean proportion of
-candidate cohort years with directly observed density was approximately
-<strong>0.42</strong>.</p>
-<p>Thus the density covariate contains two distinct types of
-information:</p>
-<ol style="list-style-type: decimal">
-<li>observed annual island-specific density during monitored years;</li>
-<li>an island-level typical value when annual density is
-unavailable.</li>
-</ol>
-<p>This distinction is now made explicit in the revised
-construction.</p>
-<hr />
-</div>
-<div id="current-extension-corrected-cohort-density-model" class="section level1">
-<h1>21. Current extension: corrected cohort-density model</h1>
-<p>The model currently running retains the same biological and survival
-structure but changes how cohort density is constructed.</p>
-<p>The aim is to preserve genuine island × year density variation while
-preventing the early accumulation of marked animals from being
-interpreted as true low density.</p>
-<div id="definition-of-the-start-up-period" class="section level2">
-<h2>21.1 Definition of the start-up period</h2>
-<p>A single reproducible rule is used across islands:</p>
-<blockquote>
-<p><strong>The first five actual survey years on each island are treated
-as the monitoring/ascertainment phase.</strong></p>
-</blockquote>
-<p>This avoids choosing a different cut-off by inspection for each
-island.</p>
-<p>The first-five-year rule is intentionally conservative and will
-itself be checked in sensitivity analysis.</p>
-</div>
-<div id="established-monitoring-period" class="section level2">
-<h2>21.2 Established monitoring period</h2>
-<p>From <strong>survey year 6 onward</strong>, annual MNA-derived
-density is treated as sufficiently established to contribute annual
-variation.</p>
-<p>Thus:</p>
-<ul>
-<li>established surveyed year → use that island-year’s observed MNA
-density;</li>
-<li>first five survey years → do not use the raw early MNA value;</li>
-<li>pre-monitoring year → no raw annual MNA is assumed;</li>
-<li>unsurveyed gap → no raw annual MNA is assumed.</li>
-</ul>
-</div>
-<div id="established-island-baseline" class="section level2">
-<h2>21.3 Established island baseline</h2>
-<p>For each island, a typical established density is calculated from
-survey years 6 onward.</p>
-<p>The mean is calculated on the <code>log1p(density)</code> scale and
-transformed back where necessary.</p>
-<p>For years without trusted annual density, the model uses this
-<strong>established island mean</strong>.</p>
-<p>This includes:</p>
-<ul>
-<li>years before monitoring began;</li>
-<li>the first five monitoring years;</li>
-<li>unsurveyed gaps.</li>
-</ul>
-<p>The rationale is not that density was literally constant in those
-years.</p>
-<p>Rather, where the data cannot support annual density variation, it is
-preferable to represent the island’s typical density than to insert an
-artificial start-up trajectory or zero density.</p>
-</div>
-<div id="standardisation" class="section level2">
-<h2>21.4 Standardisation</h2>
-<p>The mean and standard deviation used to standardise density are now
-calculated only from <strong>trusted established annual
-observations</strong>.</p>
-<p>This is an important improvement.</p>
-<p>A one-standard-deviation density effect now reflects the scale of
-real observed annual density variation during established monitoring,
-rather than a distribution dominated by repeated imputed values and
-artificially low start-up MNA.</p>
-<hr />
-</div>
-</div>
-<div id="structure-of-the-model-currently-running" class="section level1">
-<h1>22. Structure of the model currently running</h1>
-<p>The current candidate model can therefore be summarised as
-follows.</p>
-<div id="mortality-at-age-10" class="section level3">
-<h3>Mortality at age 10</h3>
-<p><span class="math display">\[
-\log(a_{10,i}) =
-\alpha_a
-+ \beta_{\mathrm{sex},a}X_{\mathrm{sex},i}
-+ \beta_{\mathrm{dens},a}D^*_{j,t}
-+ \beta_{\mathrm{feed},a}X_{\mathrm{feed},j}
-+ u_{\mathrm{time},t}
-+ u_{\mathrm{island},j}.
-\]</span></p>
-</div>
-<div id="actuarial-senescence" class="section level3">
-<h3>Actuarial senescence</h3>
-<p><span class="math display">\[
-\log(b_i) =
-\alpha_b
-+ \beta_{\mathrm{sex},b}X_{\mathrm{sex},i}
-+ \beta_{\mathrm{dens},b}D^*_{j,t}
-+ \beta_{\mathrm{feed},b}X_{\mathrm{feed},j}.
-\]</span></p>
-<p>where <span class="math inline">\(D^*_{j,t}\)</span> is now:</p>
-<ul>
-<li>observed annual density for island <span class="math inline">\(j\)</span>, year <span class="math inline">\(t\)</span>, when monitoring is established;</li>
-<li>otherwise the established mean density of island <span class="math inline">\(j\)</span>.</li>
-</ul>
-<p>The temporal effect remains shared across islands.</p>
-<p>The island random effect remains specific to island.</p>
-<p>The model still contains latent birth time, left truncation,
-interval/right censoring, and the detection component.</p>
-<hr />
-</div>
-</div>
-<div id="preliminary-feeding-results" class="section level1">
-<h1>23. Preliminary feeding results</h1>
-<p>The previous time-pooled model showed no clear feeding
-association.</p>
-<p>For mortality at age 10, the posterior median fed/unfed ratio was
-approximately:</p>
-<p><span class="math display">\[
-0.89,
-\]</span></p>
-<p>with a very broad 95% credible interval:</p>
-<p><span class="math display">\[
-0.20-4.69.
-\]</span></p>
-<p>For senescence, the posterior median fed/unfed ratio was
-approximately:</p>
-<p><span class="math display">\[
-1.19,
-\]</span></p>
-<p>with 95% credible interval:</p>
-<p><span class="math display">\[
-0.53-2.43.
-\]</span></p>
-<p>The posterior probability of a positive feeding effect on senescence
-was only about <strong>0.61</strong>.</p>
-<p>The appropriate interpretation is therefore not “feeding has no
-effect”, but rather:</p>
-<blockquote>
-<p>the available island-level replication is insufficient to estimate
-the feeding contrast precisely.</p>
-</blockquote>
-<p>This is why leave-one-island-out analysis will be especially
-important for feeding.</p>
-<hr />
-</div>
-<div id="preliminary-temporal-pattern" class="section level1">
-<h1>24. Preliminary temporal pattern</h1>
-<p>The pooled temporal effects showed a substantial long-term pattern in
-mortality level.</p>
-<p>Approximate posterior means were:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Birth-cohort period</th>
-<th align="right">Temporal effect on log <span class="math inline">\(a_{10}\)</span></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1946–1965</td>
-<td align="right">+2.88</td>
-</tr>
-<tr class="even">
-<td>1966–1970</td>
-<td align="right">+1.63</td>
-</tr>
-<tr class="odd">
-<td>1971–1975</td>
-<td align="right">+0.75</td>
-</tr>
-<tr class="even">
-<td>1976–1980</td>
-<td align="right">+0.30</td>
-</tr>
-<tr class="odd">
-<td>1981–1985</td>
-<td align="right">+0.30</td>
-</tr>
-<tr class="even">
-<td>1986–1990</td>
-<td align="right">+0.72</td>
-</tr>
-<tr class="odd">
-<td>1991–1995</td>
-<td align="right">+0.87</td>
-</tr>
-<tr class="even">
-<td>1996–2000</td>
-<td align="right">-0.07</td>
-</tr>
-<tr class="odd">
-<td>2001–2005</td>
-<td align="right">-2.09</td>
-</tr>
-<tr class="even">
-<td>2006–2010</td>
-<td align="right">-2.57</td>
-</tr>
-<tr class="odd">
-<td>2011–2019</td>
-<td align="right">-2.73</td>
-</tr>
-</tbody>
-</table>
-<p>This looks more like a pronounced secular change than purely
-exchangeable noise around zero.</p>
-<p>The current primary model still treats these as exchangeable period
-effects.</p>
-<p>A later sensitivity model will test whether a model containing an
-explicit long-term temporal trend plus residual temporal deviations
-provides a more natural representation.</p>
-<hr />
-</div>
-<div id="current-convergence-status" class="section level1">
-<h1>25. Current convergence status</h1>
-<p>In the latest completed 100k model, several focal biological
-parameters were already mixing well:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Parameter</th>
-<th align="right">Rhat</th>
-<th align="right">ESS</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><span class="math inline">\(b\)</span> in the well-informed fed
-group</td>
-<td align="right">1.00</td>
-<td align="right">990</td>
-</tr>
-<tr class="even">
-<td>sex effect on <span class="math inline">\(a_{10}\)</span></td>
-<td align="right">1.01</td>
-<td align="right">1311</td>
-</tr>
-<tr class="odd">
-<td>sex effect on <span class="math inline">\(b\)</span></td>
-<td align="right">1.01</td>
-<td align="right">1024</td>
-</tr>
-<tr class="even">
-<td>density effect on <span class="math inline">\(a_{10}\)</span></td>
-<td align="right">1.01</td>
-<td align="right">1389</td>
-</tr>
-<tr class="odd">
-<td>density effect on <span class="math inline">\(b\)</span></td>
-<td align="right">1.01</td>
-<td align="right">961</td>
-</tr>
-<tr class="even">
-<td>detection probability</td>
-<td align="right">1.00</td>
-<td align="right">10224</td>
-</tr>
-</tbody>
-</table>
-<p>The principal convergence problem was the temporal variance:</p>
-<ul>
-<li><code>sigma_time</code> ≈ 2.15;</li>
-<li>Rhat ≈ 1.12;</li>
-<li>ESS ≈ 87.</li>
-</ul>
-<p>Feeding-related quantities were also less well sampled because of
-weak island-level replication.</p>
-<p>The new density model is therefore being run for 100k first so that a
-meaningful change in the density coefficient is not hidden inside a very
-long computation.</p>
-<hr />
-</div>
-<div id="what-we-are-looking-for-in-the-current-run" class="section level1">
-<h1>26. What we are looking for in the current run</h1>
-<p>The most important comparison is the new estimate of:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{dens},b}.
-\]</span></p>
-<p>The previous estimate was approximately:</p>
-<p><span class="math display">\[
--0.164.
-\]</span></p>
-<p>Three broad outcomes are possible.</p>
-<div id="the-effect-remains-strongly-negative-and-similar-in-magnitude" class="section level2">
-<h2>26.1 The effect remains strongly negative and similar in
-magnitude</h2>
-<p>This would be highly encouraging.</p>
-<p>It would indicate that the density–senescence association is not
-primarily driven by the early monitoring ascertainment ramp.</p>
-<p>The result would then deserve serious biological interpretation.</p>
-</div>
-<div id="the-effect-remains-negative-but-becomes-weaker-or-less-precise" class="section level2">
-<h2>26.2 The effect remains negative but becomes weaker or less
-precise</h2>
-<p>This would suggest that part of the original signal was contributed
-by the density construction, but that an underlying biological
-association may remain.</p>
-<p>The effect size and uncertainty would then need to be interpreted
-conservatively.</p>
-</div>
-<div id="the-effect-disappears-or-changes-substantially" class="section level2">
-<h2>26.3 The effect disappears or changes substantially</h2>
-<p>This would indicate that the previous density–senescence result was
-strongly dependent on the MNA start-up structure.</p>
-<p>That would be an important result in itself and would prevent
-over-interpretation of an artefactual signal.</p>
-<p>The current run is therefore a genuine robustness test, not simply an
-attempt to preserve the previous result.</p>
-<hr />
-</div>
-</div>
-<div id="why-we-are-not-adding-more-complexity-yet" class="section level1">
-<h1>27. Why we are not adding more complexity yet</h1>
-<p>The current model already captures the central pace-of-life
-questions.</p>
-<p>Effects on <span class="math inline">\(b\)</span> are intrinsically
-age-dependent effects.</p>
-<p>For example:</p>
-<ul>
-<li>sex on <span class="math inline">\(b\)</span> asks whether males and
-females age at different rates;</li>
-<li>density on <span class="math inline">\(b\)</span> asks whether
-cohort environment changes the ageing rate;</li>
-<li>feeding on <span class="math inline">\(b\)</span> asks whether fed
-and unfed islands differ in ageing rate.</li>
-</ul>
-<p>Possible interactions such as:</p>
-<ul>
-<li>feeding × density;</li>
-<li>feeding × sex;</li>
-<li>density × sex</li>
-</ul>
-<p>may be biologically interesting, but are not currently being added to
-the primary model.</p>
-<p>This avoids creating a large exploratory model in a dataset where
-feeding replication is limited to eight islands.</p>
-<p>Such interactions can be investigated later as targeted secondary
-hypotheses if justified.</p>
-<hr />
-</div>
-<div id="why-species-is-not-currently-included" class="section level1">
-<h1>28. Why species is not currently included</h1>
-<p>The two iguana forms represented in the data are biologically
-similar.</p>
-<p>Earlier model development provided little evidence for a substantial
-independent species effect.</p>
-<p>Species is also strongly confounded with island.</p>
-<p>Including species alongside island-level effects would therefore
-consume limited between-island information without a strong prior
-biological reason.</p>
-<p>Species is consequently not part of the current primary model,
-although it could be revisited if a specific species-level hypothesis
-becomes important.</p>
-<hr />
-</div>
-<div id="why-the-current-model-is-now-close-to-a-final-primary-model" class="section level1">
-<h1>29. Why the current model is now close to a final primary model</h1>
-<p>The model-development process has progressively addressed the main
-statistical and biological issues.</p>
-<div id="birth-uncertainty" class="section level3">
-<h3>Birth uncertainty</h3>
-<p>Handled explicitly using latent birth intervals informed by known
-age, SVL and first-capture evidence.</p>
-</div>
-<div id="death-uncertainty" class="section level3">
-<h3>Death uncertainty</h3>
-<p>Handled using interval censoring and right censoring rather than
-converting uncertain death times into fixed events.</p>
-</div>
-<div id="delayed-study-entry" class="section level3">
-<h3>Delayed study entry</h3>
-<p>Handled through left truncation.</p>
-</div>
-<div id="mortalitysenescence-confounding" class="section level3">
-<h3>Mortality/senescence confounding</h3>
-<p>Greatly reduced by moving from age-zero mortality to an age-10
-reference hazard.</p>
-</div>
+<p>Posterior support for these directions is strong: approximately
+<strong>98.6%</strong> for higher male age-10 mortality,
+<strong>&gt;99.9%</strong> for faster male senescence,
+<strong>&gt;99.9%</strong> for lower age-10 mortality at higher
+within-island cohort density, and <strong>99.3%</strong> for slower
+senescence at higher within-island cohort density.</p>
 <div id="sex-1" class="section level3">
 <h3>Sex</h3>
-<p>Represented as a direct female-versus-male categorical effect on both
-mortality level and senescence.</p>
-</div>
-<div id="feeding" class="section level3">
-<h3>Feeding</h3>
-<p>Represented as a block-level fed-versus-unfed contrast, with
-inference appropriately limited by island-level replication.</p>
+<p>The sex result has been notably stable through the model-development
+checks. The current interpretation is that males appear to experience
+both:</p>
+<ul>
+<li>a higher adult mortality level; and</li>
+<li>a steeper increase in mortality with age.</li>
+</ul>
+<p>This is therefore a difference in the overall mortality trajectory
+rather than simply a shift in baseline risk.</p>
 </div>
 <div id="density" class="section level3">
 <h3>Density</h3>
-<p>Represented as an island × cohort-year process, now being corrected
-so that early marked-population accumulation is not mistaken for real
-low density.</p>
+<p>The density result is particularly interesting because it survives
+the move from an overall island-density measure to a
+<strong>within-island cohort comparison</strong>.</p>
+<p>The current result is not simply that naturally dense islands contain
+longer-lived animals. Instead, within the established monitoring period,
+cohorts associated with <strong>higher-than-usual density for their own
+island</strong> subsequently show:</p>
+<ul>
+<li>lower mortality at age 10; and</li>
+<li>a slower increase in mortality with age.</li>
+</ul>
+<p>This is consistent with a cohort or environmental association with
+subsequent pace of life. It should not yet be interpreted causally. MNA
+is a population-history-derived proxy rather than an independent
+experimental measure of density, and the amount of established annual
+information differs among islands.</p>
+<p>Possible biological mechanisms — including cohort quality, selective
+processes, developmental environment or population dynamics — should
+therefore be discussed only after the statistical pattern and the
+biology of the populations are considered together.</p>
 </div>
-<div id="island-heterogeneity" class="section level3">
-<h3>Island heterogeneity</h3>
-<p>Represented as persistent residual island variation in mortality
-level.</p>
-</div>
-<div id="temporal-heterogeneity" class="section level3">
-<h3>Temporal heterogeneity</h3>
-<p>Represented as a shared cohort-period effect across islands.</p>
-</div>
-<div id="sparse-historical-periods" class="section level3">
-<h3>Sparse historical periods</h3>
-<p>Handled by pooling poorly supported temporal blocks.</p>
-<p>The current model is therefore biologically coherent and
-substantially more interpretable than the earlier versions.</p>
+<div id="time" class="section level3">
+<h3>Time</h3>
+<p>There is also a substantial long-term cohort signal in adult
+mortality. Later-born cohorts appear to have lower age-10 mortality than
+earlier-born cohorts, with additional residual deviations among
+periods.</p>
+<p>The important point at this stage is not the precise linear
+coefficient, but that explicitly modelling the secular trend produces a
+much more natural temporal structure: the residual period effects no
+longer have to reproduce the entire old-to-recent mortality
+gradient.</p>
+<p>The causes of this long-term change are currently unresolved.
+Potential explanations could include real environmental change,
+management change, population processes or changes in
+observation/monitoring, and should be discussed with the co-author group
+before being given a biological interpretation.</p>
 <hr />
 </div>
 </div>
-<div id="remaining-checks-before-final-inference" class="section level1">
-<h1>30. Remaining checks before final inference</h1>
-<p>The current corrected-density 100k run is the immediate next
-checkpoint.</p>
-<p>If it behaves sensibly, the remaining analyses should be deliberately
-limited and hypothesis-driven.</p>
-<div id="confirm-the-corrected-density-result" class="section level2">
-<h2>30.1 Confirm the corrected density result</h2>
-<p>Compare the new density coefficients with the previous values,
-particularly:</p>
-<p><span class="math display">\[
-\beta_{\mathrm{dens},b}\approx-0.164.
-\]</span></p>
-</div>
-<div id="check-sensitivity-to-the-start-up-rule" class="section level2">
-<h2>30.2 Check sensitivity to the start-up rule</h2>
-<p>The five-survey-year rule is defensible and reproducible, but it is
-still an analytical choice.</p>
-<p>A targeted sensitivity should therefore assess whether the density
-conclusion changes materially under a nearby rule, for example:</p>
-<ul>
-<li>three start-up survey years;</li>
-<li>five start-up survey years;</li>
-<li>or an established-monitoring-only density analysis.</li>
-</ul>
-<p>The aim is not to search for the cut-off producing the strongest
-effect, but to show that the inference is not driven by a particular
-reasonable definition.</p>
-</div>
-<div id="remove-the-28-weakadjusted-birth-histories" class="section level2">
-<h2>30.3 Remove the 28 weak/adjusted birth histories</h2>
-<p>Refit after excluding:</p>
-<ul>
-<li>25 animals without usable SVL information;</li>
-<li>3 animals with SVL/first-capture conflicts.</li>
-</ul>
-</div>
-<div id="leave-one-island-out-feeding-analysis" class="section level2">
-<h2>30.4 Leave-one-island-out feeding analysis</h2>
-<p>Because feeding is an island-level treatment, rerun the feeding
-analysis leaving out one island at a time.</p>
-<p>This will show whether the apparent feeding contrast is
-disproportionately driven by a single island.</p>
-</div>
-<div id="residual-island-variation-in-senescence" class="section level2">
-<h2>30.5 Residual island variation in senescence</h2>
-<p>Fit one sensitivity model containing an island-level random effect on
-<span class="math inline">\(b\)</span>.</p>
-<p>This asks whether the density and feeding senescence effects persist
-after allowing islands to have persistent differences in ageing
-rate.</p>
-<p>This is a sensitivity rather than the primary model because there are
-only eight islands.</p>
-</div>
-<div id="alternative-temporal-representation" class="section level2">
-<h2>30.6 Alternative temporal representation</h2>
-<p>Fit a model containing an explicit secular cohort trend plus residual
-temporal variation.</p>
-<p>This will test whether the strong long-term temporal pattern is
-better described as a trend rather than purely exchangeable block
-variation.</p>
-</div>
-<div id="final-age-specific-predictions" class="section level2">
-<h2>30.7 Final age-specific predictions</h2>
-<p>Once the final posterior is accepted, generate mortality and survival
-trajectories across age for:</p>
-<ul>
-<li>males versus females;</li>
-<li>lower versus higher cohort density;</li>
-<li>fed versus unfed islands.</li>
-</ul>
-<p>This is important because a predictor may affect both <span class="math inline">\(a_{10}\)</span> and <span class="math inline">\(b\)</span>, meaning that its effect on mortality
-can change with age.</p>
+<div id="checks-that-materially-informed-the-current-framework" class="section level2">
+<h2>7. Checks that materially informed the current framework</h2>
+<p>Four checks materially changed or strengthened the final modelling
+story:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Birth-history audit and reference-age
+parameterisation.</strong><br />
+Birth intervals and right-censoring were checked carefully, and the
+Gompertz model was expressed at age 10 rather than age zero. This made
+the adult mortality parameter biologically interpretable and greatly
+reduced dependence between mortality level and senescence.</p></li>
+<li><p><strong>Density start-up audit.</strong><br />
+Early MNA values showed clear monitoring/ascertainment ramps on several
+islands. The first five actual survey years are therefore not used as
+annual density deviations. A 3-versus-5-year start-up sensitivity
+retained the same broad direction of density effects.</p></li>
+<li><p><strong>Feeding removal.</strong><br />
+Feeding is weakly replicated and actual individual exposure is
+uncertain. Removing it left the principal sex and density estimates
+essentially unchanged, supporting the cleaner no-feeding
+framework.</p></li>
+<li><p><strong>Between- versus within-island density and temporal
+audit.</strong><br />
+Most overall density variation was between islands, while the temporal
+random effects showed a strong secular pattern. The current model
+therefore asks a within-island density question and explicitly
+represents the long-term cohort trend. The density association remains
+after making those changes.</p></li>
+</ol>
+<p>These checks are important because they show that the current
+structure was driven by the design and diagnostics rather than by
+selecting whichever model produced the strongest statistical result.</p>
 <hr />
 </div>
-</div>
-<div id="final-mcmc-run" class="section level1">
-<h1>31. Final MCMC run</h1>
-<p>The 500,000-iteration final run has deliberately not yet been started
-for the corrected-density model.</p>
-<p>The current 100k fit is first being used to verify that the revised
-density construction behaves sensibly.</p>
-<p>Once the density definition and model structure are accepted, the
-candidate primary model will be run for:</p>
+<div id="current-interpretation-and-remaining-caution" class="section level2">
+<h2>8. Current interpretation and remaining caution</h2>
+<p>At this stage, the clearest emerging picture is:</p>
 <ul>
-<li><strong>500,000 iterations</strong>;</li>
-<li><strong>100,000 burn-in</strong>;</li>
-<li><strong>3 chains</strong>;</li>
-<li><strong>thin = 10</strong>.</li>
+<li><strong>males have a faster pace of mortality</strong>, with both
+higher adult mortality and faster actuarial senescence;</li>
+<li><strong>higher-than-usual cohort density within an island is
+associated with a slower mortality trajectory</strong>, affecting both
+adult mortality level and senescence;</li>
+<li><strong>adult mortality has changed markedly among birth cohorts
+through time</strong>, beyond the measured density effect;</li>
+<li>meaningful <strong>residual island and period differences</strong>
+remain.</li>
 </ul>
-<p>The final assessment will focus on:</p>
-<ul>
-<li>Rhat;</li>
-<li>effective sample size;</li>
-<li>posterior stability across chains;</li>
-<li>stability of the focal biological coefficients;</li>
-<li>the temporal variance;</li>
-<li>feeding uncertainty;</li>
-<li>sensitivity-analysis consistency.</li>
-</ul>
+<p>The density finding is potentially the most novel but should be
+worded carefully. The model supports a within-island association, but
+the density index is derived from long-term capture histories and
+reliable annual density information is concentrated in established
+monitoring years. For unobserved/start-up years the model assumes no
+known annual deviation, which is conservative but reduces
+information.</p>
+<p>Likewise, the temporal trend should initially be treated as an
+important empirical pattern rather than assigned to a particular
+ecological mechanism.</p>
 <hr />
 </div>
-<div id="current-biological-picture" class="section level1">
-<h1>32. Current biological picture</h1>
-<p>The emerging biological picture is currently as follows.</p>
-<div id="sex-2" class="section level2">
-<h2>Sex</h2>
-<p>There is strong evidence that males have higher adult mortality than
-females.</p>
-<p>There is also substantial evidence that males may experience faster
-actuarial senescence, although the 95% interval still marginally
-overlaps no difference.</p>
-</div>
-<div id="cohort-density" class="section level2">
-<h2>Cohort density</h2>
-<p>Before correcting the early MNA ascertainment issue, higher cohort
-density was strongly associated with lower actuarial senescence.</p>
-<p>The effect was approximately a 15% reduction in <span class="math inline">\(b\)</span> per one-standard-deviation increase in
-density.</p>
-<p>This is potentially the most interesting new result, but it is
-currently being subjected to a stricter density reconstruction before
-being accepted.</p>
-</div>
-<div id="supplementary-feeding-1" class="section level2">
-<h2>Supplementary feeding</h2>
-<p>No clear feeding effect has yet been detected on either mortality
-level or senescence.</p>
-<p>The uncertainty is substantial and consistent with the fact that
-feeding is replicated across only eight islands.</p>
-</div>
-<div id="time" class="section level2">
-<h2>Time</h2>
-<p>There is a strong long-term cohort pattern in baseline adult
-mortality that is common across islands in the current model.</p>
-<p>Its form may ultimately be better described by an explicit temporal
-trend.</p>
-<hr />
-</div>
-</div>
-<div id="brief-co-author-summary" class="section level1">
-<h1>Brief co-author summary</h1>
-<p>The analysis has developed into a <strong>reference-age Gompertz
-pace-of-life model</strong> that separates mortality level at age 10
-from actuarial senescence.</p>
-<p>Sex, cohort density and supplementary feeding are each allowed to
-influence both mortality components.</p>
-<p>The latest completed model suggests:</p>
+<div id="proposed-next-step" class="section level2">
+<h2>9. Proposed next step</h2>
+<p>I suggest treating this as the <strong>candidate primary
+model</strong>.</p>
+<p>But I think we need to consider these questions:</p>
 <ul>
-<li>substantially higher male adult mortality;</li>
-<li>probable faster male senescence;</li>
-<li>little clear cohort-density effect on mortality at age 10;</li>
-<li>a strong negative density–senescence association;</li>
-<li>no clear feeding effect, with substantial uncertainty due to
-island-level replication.</li>
+<li>Does within-island MNA-derived density appropriately represent the
+cohort environment we want to discuss?</li>
+<li>What historical or management processes could plausibly explain the
+strong long-term cohort trend?</li>
+<li>Is there a compelling biological reason to retain feeding, species,
+or additional island-level senescence structure in the primary analysis
+rather than as secondary sensitivities?</li>
 </ul>
-<p>The main new issue identified during model checking concerns the
-cohort-density covariate.</p>
-<p>MNA itself does not assume complete detection, but several islands
-show a pronounced rise in MNA during the first monitoring years while
-the fraction of newly encountered animals falls. This strongly suggests
-that early MNA partly reflects accumulation into the marked
-population.</p>
-<p>Because monitoring began at different dates on different islands, the
-shared temporal effect cannot fully absorb this artefact.</p>
-<p>The model currently running therefore uses annual MNA-derived density
-only once monitoring is established. The first five survey years,
-pre-monitoring years and unsurveyed gaps receive each island’s
-established typical density instead. Density is standardised using only
-the trusted established annual observations.</p>
-<p>The immediate question is whether the previous density–senescence
-coefficient of approximately <strong>−0.16</strong> survives this
-correction.</p>
-<p>If it does, the result becomes substantially more convincing.</p>
-<p>If it weakens or disappears, that will show that part of the previous
-association was generated by the structure of the monitoring record.</p>
-<p>Once this 100k corrected-density run is assessed, a small number of
-pre-specified sensitivity analyses will be conducted, followed by the
-final 500k MCMC fit and age-specific posterior mortality/survival
-predictions.</p>
+<p>Once the structure is agreed we can run with longer chains for final
+posterior estimation, followed by a small number of pre-specified
+publication-stage checks if needed. The final presentation should focus
+on posterior mortality trajectories and survival/hazard curves rather
+than on coefficients alone.</p>
+<hr />
+<div id="working-summary" class="section level3">
+<h3>Working summary</h3>
+<p>The current framework is a latent-life-history Gompertz model
+parameterised at age 10, with sex and <strong>within-island
+cohort-density deviations</strong> acting on both adult mortality and
+actuarial senescence, an explicit birth-cohort trend and residual
+period/island heterogeneity acting on adult mortality; no feeding term
+in the candidate primary model.</p>
+<p>The main current result is that <strong>male mortality is both higher
+and more strongly age-dependent, while animals associated with
+higher-than-usual density in their birth cohort show lower adult
+mortality and slower actuarial senescence. A strong long-term decline in
+adult mortality across birth cohorts is also evident and warrants
+biological interpretation.</strong></p>
+</div>
+</div>
 </div>
 
 
