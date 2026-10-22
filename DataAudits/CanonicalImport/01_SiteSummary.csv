@@ -1,0 +1,10 @@
+Site,Species,source_group,n_records,n_individuals,first_year,last_year,n_known_age_individuals,n_permanent_removals
+Bitter,figginsi,Southern_original,388,231,1998,2019,0,0
+Gaulin,figginsi,Southern_original,1106,542,1998,2019,0,0
+LeafSouth,figginsi,Southern_original,450,322,2006,2019,0,4
+NAdder,figginsi,Southern_original,284,159,2006,2019,0,0
+Noddy,figginsi,Southern_original,377,320,2006,2019,0,0
+WhiteB,figginsi,Southern_original,447,207,2006,2019,0,0
+FFRC,inornata,Northern_cleaned,548,179,2001,2019,52,0
+LeafNorth,inornata,Northern_cleaned,6248,1507,1980,2019,816,0
+UCay,inornata,Northern_cleaned,3030,684,1980,2019,302,0

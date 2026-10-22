@@ -1,0 +1,8 @@
+threshold_days,n_candidate_visits,n_site_years,n_site_years_split_into_multiple_visits,median_visit_span_days,q95_visit_span_days,max_visit_span_days,median_capture_days_per_visit,median_individuals_per_visit
+3,210,138,50,1,5,25,2,34
+5,197,138,42,1,7.199999999999989,25,2,35
+7,189,138,35,1,9,25,2,39
+10,182,138,31,1,9,25,2,40
+14,179,138,30,1,9,39,2,43
+21,178,138,30,1,9,39,2,43
+30,172,138,28,1,17.249999999999943,72,2,43.5

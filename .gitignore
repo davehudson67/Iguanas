@@ -48,3 +48,22 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+logs/
+ModelRuns/
+
+# Iguana analysis runtime / generated outputs
+logs/
+ModelRuns/
+
+# Regenerable analysis datasets
+Data/Iguana_Canonical_*.csv
+
+# Historical/excluded exploratory inputs
+Data/ExpertHistory_MaleRemoval.csv
+
+# Generated audit outputs: key summaries are added explicitly
+DataAudits/**
+
+# Superseded model/distribution versions
+09_Model_TimeVarying_Feeding_Matthew_TEST.R
+Distributions/Dist_GompertzCalendarLT.R

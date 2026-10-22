@@ -1,0 +1,5 @@
+birth_basis,n,median_width,mean_width,q95_width,max_width
+SVL_known_sex,2876,10,8.964815097071655,19,24
+SVL_latent_sex_union,86,2,7.546511627906977,23.5,26
+known_age,1159,1,1.0319306409363878,1,3
+no_SVL,31,40,40,40,40

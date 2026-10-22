@@ -1,0 +1,94 @@
+ID_raw,Island,animal_id,CapDate,CalYear,sex_record,Status,animal_dead,capture_then_death,alive_encounter,death_delay_years,death_overridden_by_later_recapture,comment_dead_raw,death_classification,comments,source_sheet,source_row
+Bitter_61,Bitter,61,2013-05-13,2013,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead in sea oats behind feeding beach just north of feeding sign; buried on beach,Bitter Guana Cay,140
+Bitter_7,Bitter,7,2012-05-19,2012,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead floating off of beach with sand on head; suspect buried and washed away,Bitter Guana Cay,94
+FFRC_17A,FFRC,17A,2012-05-09,2012,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead skeleton to Sandy; found 2/3s southunder rock ledge,FlatRock2019-2024,324
+FFRC_52A,FFRC,52A,2016-09-10,2016,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,pit ok Chuck found dead at SE rocks,FlatRock2019-2024,429
+Gaulin_208,Gaulin,208,2009-06-01,2009,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead by buttonwood forest,Gaulin Cay,459
+Gaulin_307,Gaulin,307,2016-05-13,2016,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,in front of buttonwood forest (found dead by ACCA without Chuk),Gaulin Cay,860
+Gaulin_341,Gaulin,341,2019-06-12,2019,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,carcass found NE of buttonwood forest in sand,Gaulin Cay,1103
+Gaulin_50,Gaulin,50,2012-05-17,2012,NA,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead center behind beach; about 2 weeks dead,Gaulin Cay,563
+Gaulin_54,Gaulin,54,2019-06-12,2019,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,carcass found midway between cave and south rocks about 20 meters inland,Gaulin Cay,1099
+Gaulin_86,Gaulin,86,2010-05-20,2010,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead on SE rocks,Gaulin Cay,501
+LeafNorth_0A,LeafNorth,0A,2006-03-19,2006,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"BB dead, no pit tag readable (or next?)",LeafCay2019-2026,9
+LeafNorth_100C,LeafNorth,100C,2002-06-26,2002,F,1,FALSE,FALSE,TRUE,0,TRUE,TRUE,death_text_overridden_by_later_live_recapture,840/157 (dead) NOOO,LeafCay2019-2026,126
+LeafNorth_103A,LeafNorth,103A,2002-06-18,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead on rocks btw BB and SW Beach,LeafCay2019-2026,291
+LeafNorth_104B,LeafNorth,104B,1996-03-22,1996,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead; internally sexed,LeafCay2019-2026,338
+LeafNorth_104D,LeafNorth,104D,2017-05-14,2017,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"no pit, 20""Ž in f/BB, scar left venter, deceased",LeafCay2019-2026,347
+LeafNorth_105C,LeafNorth,105C,2015-05-17,2015,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,ca. 34 SVL carcass,LeafCay2019-2026,382
+LeafNorth_111A,LeafNorth,111A,2009-05-18,2009,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,fem! pit dead new pit 6CEBAB7 BB #9 broken,LeafCay2019-2026,599
+LeafNorth_12/0B,LeafNorth,12/0B,2008-05-12,2008,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"pit dead, no re-pit SE Beach",LeafCay2019-2026,814
+LeafNorth_121B,LeafNorth,121B,2003-05-15,2003,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"BB, pit dead/not palpable, new 6363D2D",LeafCay2019-2026,902
+LeafNorth_125A,LeafNorth,125A,2001-06-19,2001,M,2,TRUE,TRUE,TRUE,0.0027378507871321013,FALSE,TRUE,animal_death,"died; 3 mm testes, immature",LeafCay2019-2026,968
+LeafNorth_126C,LeafNorth,126C,2017-05-14,2017,F,2,TRUE,TRUE,TRUE,0.0027378507871321013,FALSE,TRUE,animal_death,"no pit, HB, deceased in bag!, left North ofCistern, skin",LeafCay2019-2026,989
+LeafNorth_13/0A,LeafNorth,13/0A,2009-05-18,2009,F,2,TRUE,TRUE,TRUE,0.0027378507871321013,FALSE,TRUE,animal_death,"pit ok HB, died in bag overnight;",LeafCay2019-2026,1053
+LeafNorth_147C,LeafNorth,147C,2017-05-16,2017,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"pit ok, 26.5+5.5 regen, deceased loc?",LeafCay2019-2026,1541
+LeafNorth_148D,LeafNorth,148D,2009-05-19,2009,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,fresh DEAD s rocks; good fat bodies,LeafCay2019-2026,1564
+LeafNorth_150/0B,LeafNorth,150/0B,2001-06-26,2001,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,"new, tail stubby, patio, 14.8 yrs. This or next one dead in 2004",LeafCay2019-2026,1640
+LeafNorth_153A,LeafNorth,153A,2008-05-11,2008,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD skeleton found SW Rocks of Leafpreviously on U Cay pit ok,LeafCay2019-2026,1702
+LeafNorth_16/0B,LeafNorth,16/0B,2008-05-13,2008,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD carcass Rocks S of BB pit recovered,LeafCay2019-2026,1824
+LeafNorth_167B,LeafNorth,167B,2012-04-20,2012,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Found dead by Chuck Knapp,LeafCay2019-2026,1985
+LeafNorth_174B,LeafNorth,174B,2001-05-10,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"found newly dead, pit 63-5907 3/4 N on E ridge",LeafCay2019-2026,2163
+LeafNorth_184B,LeafNorth,184B,2005-05-15,2005,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"LOC=? Old pit dead?, New pit 670BF0A",LeafCay2019-2026,2387
+LeafNorth_19/0C,LeafNorth,19/0C,2017-05-14,2017,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"pit ok, South rocks BB, Deceased",LeafCay2019-2026,2489
+LeafNorth_193A,LeafNorth,193A,2001-05-10,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"found dead inside house, pit ok",LeafCay2019-2026,2562
+LeafNorth_198A,LeafNorth,198A,2017-05-17,2017,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead pit ok 1FA0208 N. end,LeafCay2019-2026,2654
+LeafNorth_199B,LeafNorth,199B,2012-01-15,2012,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,SW coast dead by Kirsten Hines,LeafCay2019-2026,2698
+LeafNorth_20/60B,LeafNorth,20/60B,2017-05-14,2017,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"pit ok, South end of East Ridge, Deceased",LeafCay2019-2026,2800
+LeafNorth_25/7B,LeafNorth,25/7B,2005-05-14,2005,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD ~23 SVL Rocks E of House,LeafCay2019-2026,3077
+LeafNorth_33/6A,LeafNorth,33/6A,2002-10-02,2002,NA,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,new; from female 76 [DEAD in 2004],LeafCay2019-2026,3538
+LeafNorth_43A,LeafNorth,43A,2019-05-18,2019,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,BB rocks carcass 68A0FC6,LeafCay2019-2026,4020
+LeafNorth_44B,LeafNorth,44B,2005-05-14,2005,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD ~29SVL Rocks S of BB Pit ok,LeafCay2019-2026,4048
+LeafNorth_47B,LeafNorth,47B,2008-05-11,2008,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"#9 toe broken, pit dead-can""Žt feel, new pit 68A0762 BB",LeafCay2019-2026,4132
+LeafNorth_48B,LeafNorth,48B,2005-05-13,2005,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD ~32 SVL Full Tail,LeafCay2019-2026,4164
+LeafNorth_53/7A,LeafNorth,53/7A,2004-05-13,2004,NA,2,TRUE,TRUE,TRUE,0.0054757015742642025,FALSE,TRUE,animal_death,"NEW Rocks, E of House; found dead 2 days later",LeafCay2019-2026,4438
+LeafNorth_55/0B,LeafNorth,55/0B,2009-05-18,2009,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD 4x2cmx1.5cm sponge in abdomen pit ok SW rocks (in bush!?),LeafCay2019-2026,4534
+LeafNorth_56B,LeafNorth,56B,2001-05-13,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"DL1 S of big W beach, dead",LeafCay2019-2026,4580
+LeafNorth_59C,LeafNorth,59C,2001-05-12,2001,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead just S big W beach,LeafCay2019-2026,4683
+LeafNorth_63/0B,LeafNorth,63/0B,2008-05-11,2008,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"Pit dead, new pit 672A115 BB",LeafCay2019-2026,4861
+LeafNorth_63/9B,LeafNorth,63/9B,2004-05-16,2004,NA,2,TRUE,TRUE,TRUE,1.1407711613050422e-4,FALSE,TRUE,animal_death,"E Beach, new, but dead 1 hr later",LeafCay2019-2026,4882
+LeafNorth_65B,LeafNorth,65B,2001-05-10,2001,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"dead pit, but palpable",LeafCay2019-2026,5022
+LeafNorth_65B,LeafNorth,65B,2002-05-15,2002,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,transmitter: #148.414 -1.5; dead pit2 . palpable; big w beach,LeafCay2019-2026,5023
+LeafNorth_66A,LeafNorth,66A,2002-05-15,2002,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,pit dead,LeafCay2019-2026,5055
+LeafNorth_66A,LeafNorth,66A,2003-05-17,2003,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"BB, pit dead, new pit 632430E",LeafCay2019-2026,5056
+LeafNorth_71/7B,LeafNorth,71/7B,2011-05-16,2011,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead in crotch of tree behind BB,LeafCay2019-2026,5292
+LeafNorth_73/0B,LeafNorth,73/0B,2010-05-13,2010,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"DEAD, bloated Pit 6365920",LeafCay2019-2026,5380
+LeafNorth_73B,LeafNorth,73B,2005-05-13,2005,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead 100' S BB; pit confirmed,LeafCay2019-2026,5397
+LeafNorth_75/7A,LeafNorth,75/7A,2019-05-18,2019,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,South ridge dead,LeafCay2019-2026,5497
+LeafNorth_75A,LeafNorth,75A,2016-05-22,2016,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,carcass found in house (pit ok)[75A],LeafCay2019-2026,5534
+LeafNorth_75B,LeafNorth,75B,2016-05-20,2016,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,carcass found on N rocks pit ok,LeafCay2019-2026,5539
+LeafNorth_76A,LeafNorth,76A,2000-03-20,2000,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"dead pit, but palpable",LeafCay2019-2026,5571
+LeafNorth_76A,LeafNorth,76A,2001-05-10,2001,F,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,pit_or_tag_failure_not_animal_death,"dead pit, can""Žt palpate",LeafCay2019-2026,5572
+LeafNorth_77C,LeafNorth,77C,2002-05-20,2002,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,CY204 N end E ridge [Dead in 2004],LeafCay2019-2026,5629
+LeafNorth_80/0A,LeafNorth,80/0A,2002-07-10,2002,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,S end of E ridge [This or B dead in 2004,LeafCay2019-2026,5713
+LeafNorth_81/0B,LeafNorth,81/0B,2003-05-17,2003,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,"BB, pit 6364921 [Dead in 2004]",LeafCay2019-2026,5741
+LeafNorth_81C,LeafNorth,81C,2019-05-18,2019,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,East Ridge 68A232D DEAD,LeafCay2019-2026,5813
+LeafNorth_85/0B,LeafNorth,85/0B,2009-05-18,2009,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead on east ridge; svl ca. 27,LeafCay2019-2026,6013
+LeafNorth_85/6A,LeafNorth,85/6A,2013-05-17,2013,F,2,TRUE,TRUE,TRUE,0.0027378507871321013,FALSE,TRUE,animal_death,dead in bag; toes #21 BB,LeafCay2019-2026,6017
+LeafNorth_90B,LeafNorth,90B,1998-03-10,1998,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"Found dead, pit recovered",LeafCay2019-2026,6250
+LeafNorth_92A,LeafNorth,92A,1998-03-13,1998,M,1,FALSE,FALSE,TRUE,0,FALSE,TRUE,historical_or_referential_death_note,23.5 yrs? [DEAD in 2004],LeafCay2019-2026,6391
+LeafNorth_93B,LeafNorth,93B,2008-05-11,2008,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD pit ok LOC=?,LeafCay2019-2026,6459
+LeafNorth_94A,LeafNorth,94A,2003-05-15,2003,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"rocks of SW point, pit ok2 21.7 1105 104 DEAD",LeafCay2019-2026,6503
+LeafNorth_98B,LeafNorth,98B,2002-06-16,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD ON BEACH,LeafCay2019-2026,6669
+NAdder_14,NAdder,14,2012-04-18,2012,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead under sea grape in sand area by dry pond,North Adderly,146
+NAdder_7,NAdder,7,2010-03-29,2010,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,carcass found on SW point trail by camp,North Adderly,74
+Noddy_70,Noddy,70,2019-06-09,2019,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,south caturs plateau- DEAD,Noddy Cay,359
+Noddy_95,Noddy,95,2018-06-08,2018,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead on west edge of island by landing area (camp); Dead perhaps 2-4 days.,Noddy Cay,288
+UCay_108B,UCay,108B,2001-05-12,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD pit=#1C99FB3,Ucay2019-2026,236
+UCay_109B,UCay,109B,2015-05-21,2015,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Pit OK but dead on NE Isthmus,Ucay2019-2026,253
+UCay_113A,UCay,113A,2003-05-16,2003,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"isthmus, pit ok1 21.7 104 DEAD",Ucay2019-2026,323
+UCay_118A,UCay,118A,2002-05-18,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead carcass; pit ok; SW isthmus,Ucay2019-2026,375
+UCay_120/0A,UCay,120/0A,2000-03-21,2000,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,DEAD on rocks pit 63551B,Ucay2019-2026,437
+UCay_13A,UCay,13A,2009-05-20,2009,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,pit ok dead=mummy,Ucay2019-2026,667
+UCay_140A,UCay,140A,2000-03-21,2000,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead,Ucay2019-2026,696
+UCay_153A,UCay,153A,2008-05-11,2008,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead on Leaf Cay SW rocks just above high tide line,Ucay2019-2026,874
+UCay_170B,UCay,170B,2003-05-16,2003,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"isthmus, pit ok1 . 104 DEAD",Ucay2019-2026,1087
+UCay_175A,UCay,175A,2003-05-16,2003,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead on N central isthmus,Ucay2019-2026,1131
+UCay_179A,UCay,179A,2001-05-14,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead W end N beach on rocks,Ucay2019-2026,1183
+UCay_181A,UCay,181A,2005-05-12,2005,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,ca. 33 SVL DEAD!! E Central isthmus,Ucay2019-2026,1227
+UCay_186A,UCay,186A,2001-05-14,2001,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead S end rocks east side,Ucay2019-2026,1287
+UCay_195B,UCay,195B,2003-05-16,2003,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,"isthmus, pit ok, DEAD",Ucay2019-2026,1429
+UCay_53B,UCay,53B,2008-05-14,2008,F,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead on ishthmus,Ucay2019-2026,2397
+UCay_6/0B,UCay,6/0B,2002-05-18,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,dead carcass; IFA58A7 LM6 NW end,Ucay2019-2026,2516
+UCay_91B,UCay,91B,2002-05-18,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,LM1 NE isthmus; pit ok1 . 104 DEAD,Ucay2019-2026,3048
+UCay_93A,UCay,93A,2002-05-18,2002,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,Dead 20' in from north beach,Ucay2019-2026,3086
+WhiteB_41,WhiteB,41,2009-07-06,2009,M,2,TRUE,FALSE,FALSE,0,FALSE,TRUE,animal_death,found dead by Kirsten Hines,White Bay,166

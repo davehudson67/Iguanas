@@ -1,0 +1,21 @@
+Site,animal_id,individual_id,individual_id_clean,pit_tag,capture_date,calendar_year,identity_resolution,permanent_removal,removal_date,comments,source_sheet,source_row
+Bitter,notes,Bitter_notes,Bitter_PIT_982000409784615,982000409784615,2018-04-24,2018,placeholder_ID_resolved_by_PIT,FALSE,NA,"feeding beach; based on PIT, think this is a 2016 original capture",Bitter Guana Cay,253
+Bitter,see notes,Bitter_see notes,Bitter_PIT_982000409784615,982000409784615,2019-06-11,2019,placeholder_ID_resolved_by_PIT,FALSE,NA,north side of feeding beach; NSF swab; ultrasound-0,Bitter Guana Cay,381
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,1994-03-19,1994,placeholder_ID_unresolved,FALSE,NA,wt=38 found freshly dead,LeafCay2019-2026,6740
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,1996-03-22,1996,placeholder_ID_unresolved,FALSE,NA,"new Oviduct not expanded.R=4,3,1 etc. L= 5,6,5,4,2,2,1, etc.",LeafCay2019-2026,6741
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2002-05-15,2002,placeholder_ID_unresolved,FALSE,NA,new; dead; DY3 2/3 N on E ridge,LeafCay2019-2026,6742
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2002-05-16,2002,placeholder_ID_unresolved,FALSE,NA,new; dead; big w beach,LeafCay2019-2026,6743
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2011-05-17,2011,placeholder_ID_unresolved,FALSE,NA,"no pit, BB",LeafCay2019-2026,6744
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2011-05-19,2011,placeholder_ID_unresolved,FALSE,NA,"no pit, skeleton at East Point",LeafCay2019-2026,6745
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2011-05-19,2011,placeholder_ID_unresolved,FALSE,NA,"no pit, carcass at North End",LeafCay2019-2026,6746
+LeafNorth,DEAD,LeafNorth_DEAD,NA,NA,2011-05-19,2011,placeholder_ID_unresolved,FALSE,NA,"no pit, carcass at North End2 6.3 0701 53 21.40",LeafCay2019-2026,6747
+LeafNorth,Dead,LeafNorth_Dead,NA,NA,2013-05-18,2013,placeholder_ID_unresolved,FALSE,NA,new #38 toes dead in bag East Ridge,LeafCay2019-2026,6748
+LeafSouth,19,LeafSouth_19,LeafSouth_PIT_4B10296441,4B10296441,2008-03-25,2008,split_post_translocation_Ig_reuse_by_PIT,FALSE,2006-04-09,"E. Beach, 23° 47.232N; 76°7.808W (blood #11)",Leaf Cay,27
+LeafSouth,20,LeafSouth_20,LeafSouth_PIT_4B06441552,4B06441552,2008-03-25,2008,split_post_translocation_Ig_reuse_by_PIT,FALSE,2006-04-09,"SW Conch, 23° 47.151N; 76°7.830W (blood #7)",Leaf Cay,28
+LeafSouth,21,LeafSouth_21,LeafSouth_PIT_4B0F5A7722,4B0F5A7722,2008-03-25,2008,split_post_translocation_Ig_reuse_by_PIT,FALSE,2006-04-09,NA,Leaf Cay,29
+LeafSouth,22,LeafSouth_22,LeafSouth_PIT_4A0E512626,4A0E512626,2008-03-25,2008,split_post_translocation_Ig_reuse_by_PIT,FALSE,2006-04-10,"S. side, 23° 47.127N; 76°7.714W (blood #5)",Leaf Cay,30
+Noddy,?,Noddy_?,Noddy_PIT_989001003028650,989001003028650,2018-06-08,2018,placeholder_ID_resolved_by_PIT,FALSE,NA,SW side- north Opuntia patch,Noddy Cay,308
+Noddy,?,Noddy_?,Noddy_PIT_989001003028693,989001003028693,2018-09-07,2018,placeholder_ID_resolved_by_PIT,FALSE,NA,North cactus plateau; can't find PIT- check 2014,Noddy Cay,322
+Noddy,either 206 or 211(check sheet),Noddy_either 206 or 211(check sheet),Noddy_PIT_982000403120766,982000403120766,2018-06-07,2018,placeholder_ID_resolved_by_PIT,FALSE,NA,SW cave; caliper malfunction,Noddy Cay,286
+UCay,DEAD,UCay_DEAD,NA,NA,2002-10-03,2002,placeholder_ID_unresolved,FALSE,NA,from female 194; fresh dead in nest,Ucay2019-2026,3228
+UCay,NO #,UCay_NO #,UCay_PIT_982000409784577,982000409784577,2018-06-04,2018,placeholder_ID_resolved_by_PIT,FALSE,NA,Chuck beach new pit=982000409784577 NEED toe clip-Chuck forgot,Ucay2019-2026,3243

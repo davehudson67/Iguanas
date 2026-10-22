@@ -1,0 +1,12 @@
+Site,feeding_state,feeding_high,feeding_any,n_survey_years,first_year,last_year
+Bitter,none,0,0,5,1998,2003
+Bitter,high_regular,1,1,11,2006,2019
+FFRC,none,0,0,14,2001,2019
+Gaulin,low_intermit,0,1,20,1998,2019
+LeafNorth,high_regular,1,1,30,1980,2019
+LeafSouth,none,0,0,2,2006,2008
+LeafSouth,high_regular,1,1,3,2016,2019
+NAdder,none,0,0,8,2006,2019
+Noddy,none,0,0,8,2006,2019
+UCay,high_regular,1,1,29,1980,2019
+WhiteB,low_intermit,0,1,8,2006,2019

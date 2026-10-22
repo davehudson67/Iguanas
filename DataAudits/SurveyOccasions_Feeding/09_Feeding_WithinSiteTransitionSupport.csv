@@ -1,0 +1,10 @@
+Site,n_primary_states_observed,n_detailed_states_observed,first_observed_year,last_observed_year,first_high_year,last_nonhigh_year
+Bitter,2,2,1998,2019,2006,2003
+LeafSouth,2,2,2006,2019,2016,2008
+FFRC,1,1,2001,2019,NA,2019
+Gaulin,1,1,1998,2019,NA,2019
+LeafNorth,1,1,1980,2019,1980,NA
+NAdder,1,1,2006,2019,NA,2019
+Noddy,1,1,2006,2019,NA,2019
+UCay,1,1,1980,2019,1980,NA
+WhiteB,1,1,2006,2019,NA,2019
