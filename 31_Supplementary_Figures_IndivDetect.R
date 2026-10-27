@@ -7,6 +7,7 @@
 ## ============================================================
 
 library(tidyverse)
+library(coda)
 
 set.seed(20261027)
 
@@ -34,8 +35,25 @@ save_figure <- function(plot, stem, width = 7.2, height = 5.2) {
 }
 
 extract_draw_matrix <- function(x) {
-  if (inherits(x, "mcmc") || inherits(x, "mcmc.list")) return(as.matrix(x))
-  if (is.matrix(x) || is.data.frame(x)) return(as.matrix(x))
+  if (inherits(x, "mcmc.list")) {
+    return(
+      do.call(
+        rbind,
+        lapply(
+          x,
+          as.matrix
+        )
+      )
+    )
+  }
+
+  if (inherits(x, "mcmc")) {
+    return(as.matrix(x))
+  }
+
+  if (is.matrix(x) || is.data.frame(x)) {
+    return(as.matrix(x))
+  }
   if (!is.list(x)) return(NULL)
 
   for (nm in c("samples", "combined_samples", "posterior_samples", "draws", "mcmc")) {
