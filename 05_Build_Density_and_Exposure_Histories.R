@@ -409,11 +409,8 @@ exposure_history <- tribble(
   "Gaulin", 2010, 2019, "low_intermit", "low_intermit",
   "Activity reportedly declined after Bitter became more popular; kept categorical rather than inventing a numeric decline.",
 
-  "LeafNorth", 1980, 2018, "high_regular", "high_regular",
-  "Tourism/provisioning present at the start of monitoring and increased through the long-term study.",
-
-  "LeafNorth", 2019, 2019, "low_intermit", "low_intermit",
-  "Beginning of the reported marked reduction in visitation during 2019-2023.",
+  "LeafNorth", 1980, 2019, "high_regular", "high_regular",
+  "Tourism/provisioning already established when long-term monitoring began; no defensible within-data cessation before 2019.",
 
   "LeafSouth", 1980, 2011, "none", "none",
   "Provisioning not documented before the reported onset around 2012.",
@@ -427,11 +424,8 @@ exposure_history <- tribble(
   "Noddy", 1980, 2019, "none", "none",
   "Reported not visited/provisioned.",
 
-  "UCay", 1980, 2018, "high_regular", "high_regular",
-  "Regular provisioning/tourism throughout long monitoring; lower visitation than Leaf North but established and increasing.",
-
-  "UCay", 2019, 2019, "low_intermit", "low_intermit",
-  "Beginning of the reported marked reduction in visitation during 2019-2023.",
+  "UCay", 1980, 2019, "high_regular", "high_regular",
+  "Regular provisioning/tourism throughout the permitted monitoring period.",
 
   "WhiteB", 1980, 1997, "none", "none",
   "Feeding not documented before the late 1990s.",
@@ -754,23 +748,33 @@ birth_density_support <- map_dfr(
   ),
   function(i) {
 
-    low_year <- floor(
+    birth_low_time <-
       cintB_adj[
         i,
         1
       ] +
-        Origin -
-        1
-    )
+      Origin -
+      1
 
-    high_year <- floor(
+    birth_high_time <-
       cintB_adj[
         i,
         2
       ] +
-        Origin -
-        1
+      Origin -
+      1
+
+    ## tB is continuous on [lower, upper]. The exact upper endpoint
+    ## has probability zero, so supported calendar birth years are
+    ## floor(lower) through ceiling(upper) - 1.
+    low_year <- floor(
+      birth_low_time
     )
+
+    high_year <- ceiling(
+      birth_high_time
+    ) -
+      1L
 
     possible_years <- seq.int(
       low_year,
