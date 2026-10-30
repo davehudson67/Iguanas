@@ -946,7 +946,7 @@ if(
 ##   FFRC post-2016 = 2017 onward
 ##
 ## Sensitivity:
-##   acute 2016-2018
+##   acute post-storm window = 2017-2018
 ## ============================================================
 
 matthew_site_year <- expand_grid(
@@ -965,12 +965,12 @@ matthew_site_year <- expand_grid(
             2017
       ),
 
-    matthew_acute_2016_2018 =
+    matthew_acute_2017_2018 =
       as.integer(
         Site ==
           "FFRC" &
           calendar_year >=
-            2016 &
+            2017 &
           calendar_year <=
             2018
       ),
@@ -1127,7 +1127,7 @@ for(r in seq_len(nrow(matthew_site_year))) {
       jj,
       tt
     ] <-
-      matthew_site_year$matthew_acute_2016_2018[r]
+      matthew_site_year$matthew_acute_2017_2018[r]
   }
 }
 
@@ -1382,7 +1382,7 @@ cat("1. Feeding is site x calendar-year, never individual treatment.\n")
 cat("2. Primary feeding contrast: high/regular vs all other states.\n")
 cat("3. Sensitivity: any provisioning vs none.\n")
 cat("4. LeafNorth and UCay remain high/regular through 2019.\n")
-cat("5. Matthew primary: FFRC 2017 onward; sensitivity 2016-2018.\n")
+cat("5. Matthew primary: FFRC 2017 onward; acute sensitivity: FFRC 2017-2018.\n")
 cat("6. Large-male removal is omitted entirely.\n")
 cat("7. Survey-occasion definition is NOT chosen automatically here.\n")
 cat("   Choose it from the date-gap/threshold audit before long MCMC.\n")
