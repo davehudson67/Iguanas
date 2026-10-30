@@ -1035,7 +1035,7 @@ cat("------------------------------------------------------------\n")
 cat("Primary provisioning: high/regular vs other states\n")
 cat("Sensitivity provisioning: any provisioning vs none\n")
 cat("FFRC primary disturbance: 2017 onward (post-2016)\n")
-cat("FFRC sensitivity disturbance: 2016-2018\n")
+cat("FFRC sensitivity disturbance: 2017-2018\n")
 cat("Targeted male removals: not yet coded without exact site/year history\n")
 
 cat("\nSaved:\n")
