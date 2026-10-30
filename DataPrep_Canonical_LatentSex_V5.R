@@ -786,7 +786,23 @@ calibration_data <- AllData %>%
     age_known > 0,
     !is.na(sex_clean)
   ) %>%
+  add_count(
+    ID,
+    name = "n_calibration_records_id"
+  ) %>%
   mutate(
+    ## Retain all longitudinal known-age measurements, but give each
+    ## biological individual equal TOTAL influence in the quantile
+    ## calibration regardless of how often it was recaptured.
+    calibration_weight =
+      1 / n_calibration_records_id,
+
+    ## Constant rescaling does not alter weighted quantile-regression
+    ## coefficients and keeps weights numerically well behaved.
+    calibration_weight =
+      calibration_weight /
+      mean(calibration_weight),
+
     age_for_calibration = pmin(
       age_known,
       40
@@ -818,13 +834,17 @@ if(length(unique(calibration_data$sex_f)) < 2) {
 fit_min_log <- rq(
   log_age ~ svl + I(svl^2) + sex_f,
   tau = 0.05,
-  data = calibration_data
+  data = calibration_data,
+  weights = calibration_weight,
+  method = "fn"
 )
 
 fit_max_log <- rq(
   log_age ~ svl + I(svl^2) + sex_f,
   tau = 0.95,
-  data = calibration_data
+  data = calibration_data,
+  weights = calibration_weight,
+  method = "fn"
 )
 
 ## ============================================================
