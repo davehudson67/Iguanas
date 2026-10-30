@@ -2302,6 +2302,49 @@ chain_file <- file.path(
 )
 
 
+## Record the exact code/data inputs used by this chain so that the
+## combiner can refuse to mix stale or incompatible runs.
+script_arg <- grep(
+  "^--file=",
+  commandArgs(
+    trailingOnly = FALSE
+  ),
+  value = TRUE
+)
+
+model_script_path <- if(length(script_arg) > 0) {
+  sub(
+    "^--file=",
+    "",
+    script_arg[1]
+  )
+} else {
+  NA_character_
+}
+
+hash_targets <- c(
+  model_script = model_script_path,
+  data_prep_script = "DataPrep_Canonical_LatentSex_V5.R",
+  canonical_input = "Data/Iguana_Canonical_PreDataPrep_Through2019.rds",
+  density_covariates = covariate_file,
+  calendar_exposures = exposure_file,
+  gompertz_distribution = gompertz_file
+)
+
+hash_targets <- hash_targets[
+  !is.na(hash_targets) &
+    file.exists(hash_targets)
+]
+
+analysis_hashes <- as.character(
+  tools::md5sum(
+    hash_targets
+  )
+)
+
+names(analysis_hashes) <- names(hash_targets)
+
+
 saveRDS(
   list(
     model_variant =
@@ -2318,6 +2361,9 @@ saveRDS(
 
     nburnin =
       nburnin,
+
+    analysis_hashes =
+      analysis_hashes,
 
     thin =
       thin,
