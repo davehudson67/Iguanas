@@ -361,7 +361,7 @@ calendar_effect_summary <- tibble(
         MODEL_VARIANT ==
           "MATTHEW_ACUTE"
       ) {
-        "FFRC acute 2016-2018 Matthew period"
+        "FFRC acute post-Matthew 2017-2018 period"
       } else {
         "FFRC post-2016 Matthew period"
       }
