@@ -361,6 +361,134 @@ if (n_distinct(robust$model) > 1) {
   )
 }
 
+## ============================================================
+## FIGURE S7. FFRC ENCOUNTER SUPPORT AROUND HURRICANE MATTHEW
+##
+## All 2016 FFRC surveys preceded Hurricane Matthew (Oct 2016).
+## This figure is descriptive only and shows why raw annual encounter
+## counts cannot be interpreted as mortality without accounting for
+## detection / survey effort.
+## ============================================================
+
+canonical_file <- "Data/Iguana_Canonical_PreDataPrep_Through2019.rds"
+
+if (file.exists(canonical_file)) {
+
+  canonical <- readRDS(canonical_file)
+
+  ffrc_annual <- canonical %>%
+    filter(
+      Site == "FFRC"
+    ) %>%
+    transmute(
+      year = as.integer(calendar_year),
+      id = individual_id_clean,
+      date = as.Date(capture_date)
+    ) %>%
+    group_by(year) %>%
+    summarise(
+      capture_records = n(),
+      unique_individuals = n_distinct(id),
+      survey_dates = n_distinct(date),
+      .groups = "drop"
+    ) %>%
+    arrange(year)
+
+  write_csv(
+    ffrc_annual,
+    file.path(
+      out_dir,
+      "Figure_S7_FFRC_Matthew_RawEncounterSupport_values.csv"
+    )
+  )
+
+  ffrc_long <- ffrc_annual %>%
+    pivot_longer(
+      cols = c(
+        unique_individuals,
+        capture_records,
+        survey_dates
+      ),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+    mutate(
+      metric = recode(
+        metric,
+        unique_individuals = "Unique individuals",
+        capture_records = "Capture records",
+        survey_dates = "Survey dates"
+      ),
+      metric = factor(
+        metric,
+        levels = c(
+          "Unique individuals",
+          "Capture records",
+          "Survey dates"
+        )
+      )
+    )
+
+  fig_s7 <- ggplot(
+    ffrc_long,
+    aes(
+      x = year,
+      y = value
+    )
+  ) +
+    geom_vline(
+      xintercept = 2016.77,
+      linetype = 2,
+      colour = "grey40"
+    ) +
+    geom_line(
+      linewidth = 0.8
+    ) +
+    geom_point(
+      size = 2
+    ) +
+    facet_wrap(
+      ~ metric,
+      ncol = 1,
+      scales = "free_y"
+    ) +
+    scale_x_continuous(
+      breaks = sort(unique(ffrc_annual$year))
+    ) +
+    labs(
+      x = "Calendar year",
+      y = NULL,
+      title = "FFRC encounter support around Hurricane Matthew",
+      subtitle = paste0(
+        "The dashed line marks Hurricane Matthew (October 2016). ",
+        "All FFRC observations in 2016 preceded the storm."
+      ),
+      caption = paste0(
+        "Annual encounter totals declined after 2016, but survey effort also declined sharply. ",
+        "These descriptive counts are not estimates of abundance or survival."
+      )
+    ) +
+    base_theme +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1
+      ),
+      plot.caption = element_text(
+        hjust = 0,
+        size = 8.5
+      )
+    )
+
+  save_figure(
+    fig_s7,
+    "Figure_S7_FFRC_Matthew_RawEncounterSupport",
+    width = 7.4,
+    height = 7.2
+  )
+}
+
+
 cat("\n============================================================\n")
 cat("SUPPLEMENTARY FIGURES COMPLETE\n")
 cat("============================================================\n")
