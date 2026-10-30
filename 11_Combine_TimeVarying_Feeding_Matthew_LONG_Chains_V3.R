@@ -63,6 +63,44 @@ chain_objects <- lapply(
 )
 
 
+## Refuse to combine chains generated from different code or inputs.
+if(
+  any(
+    vapply(
+      chain_objects,
+      function(x) is.null(x$analysis_hashes),
+      logical(1)
+    )
+  )
+) {
+  stop(
+    "One or more chain files lack analysis_hashes. ",
+    "Do not combine legacy and audited chains."
+  )
+}
+
+reference_hashes <- chain_objects[[1]]$analysis_hashes
+
+for(k in seq_along(chain_objects)) {
+  if(
+    !identical(
+      chain_objects[[k]]$analysis_hashes,
+      reference_hashes
+    )
+  ) {
+    stop(
+      "Chain ",
+      k,
+      " was generated from different model/data inputs. ",
+      "Refusing to combine incompatible chains."
+    )
+  }
+}
+
+cat("\nVerified identical model/data hashes across all chains.\n")
+print(reference_hashes)
+
+
 loaded_chain_ids <- vapply(
   chain_objects,
   function(x) {
