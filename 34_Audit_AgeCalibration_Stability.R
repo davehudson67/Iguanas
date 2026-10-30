@@ -43,6 +43,83 @@ write_csv(
   )
 )
 
+
+## ============================================================
+## MORPHOMETRIC SUPPORT / EXTRAPOLATION CHECK
+##
+## All formal age-calibration records currently come from inornata.
+## Quantify whether first-capture SVLs in each target species fall
+## outside the SVL range actually represented by calibration data.
+## ============================================================
+
+cal_svl_min <- min(
+  calibration_data$svl,
+  na.rm = TRUE
+)
+
+cal_svl_max <- max(
+  calibration_data$svl,
+  na.rm = TRUE
+)
+
+calibration_svl_range <- calibration_data %>%
+  summarise(
+    n_records = n(),
+    min_svl = min(svl, na.rm = TRUE),
+    q05_svl = quantile(svl, 0.05, na.rm = TRUE, names = FALSE),
+    median_svl = median(svl, na.rm = TRUE),
+    q95_svl = quantile(svl, 0.95, na.rm = TRUE, names = FALSE),
+    max_svl = max(svl, na.rm = TRUE)
+  )
+
+target_svl_support <- growth_info %>%
+  filter(
+    !is.na(first_svl)
+  ) %>%
+  mutate(
+    outside_calibration_svl_range =
+      first_svl < cal_svl_min |
+      first_svl > cal_svl_max
+  ) %>%
+  group_by(
+    species
+  ) %>%
+  summarise(
+    n_individuals_with_svl = n(),
+    min_first_svl = min(first_svl, na.rm = TRUE),
+    q05_first_svl = quantile(first_svl, 0.05, na.rm = TRUE, names = FALSE),
+    median_first_svl = median(first_svl, na.rm = TRUE),
+    q95_first_svl = quantile(first_svl, 0.95, na.rm = TRUE, names = FALSE),
+    max_first_svl = max(first_svl, na.rm = TRUE),
+    n_outside_calibration_svl_range =
+      sum(outside_calibration_svl_range),
+    prop_outside_calibration_svl_range =
+      mean(outside_calibration_svl_range),
+    .groups = "drop"
+  )
+
+cat("\nCalibration-data SVL range:\n")
+print(calibration_svl_range)
+
+cat("\nTarget first-capture SVL support by species:\n")
+print(target_svl_support, n = Inf)
+
+write_csv(
+  calibration_svl_range,
+  file.path(
+    out_dir,
+    "Calibration_SVL_Range.csv"
+  )
+)
+
+write_csv(
+  target_svl_support,
+  file.path(
+    out_dir,
+    "TargetSpecies_SVL_Extrapolation_Audit.csv"
+  )
+)
+
 fit_min_fn <- rq(
   log_age ~ svl + I(svl^2) + sex_f,
   tau = 0.05,
@@ -202,7 +279,20 @@ summary_diff <- comparison %>%
       sum(max_abs_diff > 1, na.rm = TRUE)
   )
 
-print(summary_diff)
+print(summary_diff, width = Inf)
+
+cat(
+  "\nIndividuals with solver-induced age-bound difference >0.5 y: ",
+  summary_diff$n_gt_0_5yr,
+  "\n",
+  sep = ""
+)
+cat(
+  "Individuals with solver-induced age-bound difference >1.0 y: ",
+  summary_diff$n_gt_1yr,
+  "\n",
+  sep = ""
+)
 
 write_csv(
   summary_diff,
