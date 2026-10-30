@@ -190,6 +190,9 @@ cat("============================================================\n")
 ## Hurricane Matthew primary contrast:
 ##   FFRC 2017 onward = 1
 ##
+## MATTHEW_ACUTE sensitivity:
+##   FFRC 2017-2018 = 1 (all 2016 FFRC surveys preceded Hurricane Matthew)
+##
 ## Large-male removal is deliberately omitted.
 ## ============================================================
 
