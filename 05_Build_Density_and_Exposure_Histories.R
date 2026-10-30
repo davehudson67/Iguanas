@@ -570,12 +570,12 @@ site_year_exposure <- map_dfr(
       ),
 
     ## Sensitivity = acute disturbance window.
-    matthew_acute_2016_2018 =
+    matthew_acute_2017_2018 =
       as.integer(
         Site ==
           "FFRC" &
           calendar_year >=
-            2016 &
+            2017 &
           calendar_year <=
             2018
       ),
@@ -653,7 +653,7 @@ for(r in seq_len(nrow(site_year_exposure))) {
     jj,
     tt
   ] <-
-    site_year_exposure$matthew_acute_2016_2018[r]
+    site_year_exposure$matthew_acute_2017_2018[r]
 
   exposure_support_matrix[
     jj,
@@ -729,7 +729,7 @@ model_site_year <- density_complete %>%
         provision_any,
         tourism_any,
         matthew_post2016,
-        matthew_acute_2016_2018,
+        matthew_acute_2017_2018,
         history_note
       ),
     by =
