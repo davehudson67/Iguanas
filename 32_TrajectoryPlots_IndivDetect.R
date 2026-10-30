@@ -1,8 +1,8 @@
 ## ============================================================
 ## 32_TrajectoryPlots_IndivDetect.R
 ##
-## Standardised mortality-hazard and survival trajectories from the
-## final individual-detection-RE model.
+## Standardised mortality-hazard and age-specific annual survival
+## trajectories from the final individual-detection-RE model.
 ##
 ## IMPORTANT INTERPRETATION:
 ## Provisioning is represented exactly as fitted: a CURRENT site-year
@@ -211,21 +211,25 @@ scenarios <- crossing(
 
 
 ## ============================================================
-## 3. EXACT GOMPERTZ HAZARD + SURVIVAL
+## 3. EXACT GOMPERTZ HAZARD + ONE-YEAR SURVIVAL
 ##
-## h(age) =
-##   a10 * exp[b * (age - 10)] * exp(betaFEED * feed)
+## Instantaneous hazard at age a:
 ##
-## With A = a10 * exp(-10*b) * exp(betaFEED * feed):
+##   h(a) =
+##     a10 * exp[b * (a - 10)] * exp(betaFEED * feed)
 ##
-## H(0, age) =
-##   A / b * (exp(b*age) - 1)
+## Integrated hazard over the NEXT one-year interval:
 ##
-## S(age) =
-##   exp[-H(0, age)]
+##   H(a, a+1) =
+##     exp(betaFEED * feed) * (a10 / b) *
+##     {exp[b * (a + 1 - 10)] - exp[b * (a - 10)]}
 ##
-## Provisioning affects CURRENT hazard multiplicatively exactly as in
-## the fitted model. It does not alter b and has no carry-over term.
+## Annual survival at age a:
+##
+##   S_1yr(a) = exp[-H(a, a+1)]
+##
+## This is faithful to the fitted CURRENT site-year hazard multiplier
+## and does not require an assumed lifelong provisioning history.
 ## ============================================================
 
 trajectory_one_scenario <- function(
@@ -294,33 +298,36 @@ trajectory_one_scenario <- function(
     )
   )
 
-  A_i <-
-    a10_i *
-    exp(
-      -10 *
-        b_i
-    ) *
-    feed_multiplier
-
   survival_matrix <- vapply(
     AGE_GRID,
     function(age) {
 
-      cumulative_hazard <-
+      one_year_hazard <-
+        feed_multiplier *
         (
-          A_i /
+          a10_i /
             b_i
         ) *
         (
           exp(
             b_i *
-              age
+              (
+                age +
+                  1 -
+                  10
+              )
           ) -
-            1
+            exp(
+              b_i *
+                (
+                  age -
+                    10
+                )
+            )
         )
 
       exp(
-        -cumulative_hazard
+        -one_year_hazard
       )
     },
     numeric(
@@ -399,7 +406,7 @@ trajectory_one_scenario <- function(
       ),
 
     metric =
-      "Survival probability",
+      "Annual survival probability",
 
     sex =
       sex_label,
@@ -446,7 +453,7 @@ trajectories <- pmap_dfr(
         levels =
           c(
             "Mortality hazard",
-            "Survival probability"
+            "Annual survival probability"
           )
       ),
 
@@ -501,7 +508,7 @@ plot_data <- trajectories %>%
     lower_plot =
       if_else(
         metric ==
-          "Survival probability",
+          "Annual survival probability",
         pmax(
           0,
           lower
@@ -512,7 +519,7 @@ plot_data <- trajectories %>%
     upper_plot =
       if_else(
         metric ==
-          "Survival probability",
+          "Annual survival probability",
         pmin(
           1,
           upper
@@ -583,18 +590,16 @@ trajectory_figure <- ggplot(
       NULL,
 
     title =
-      "Model-implied mortality and survival trajectories",
+      "Mortality hazard and annual survival across age",
 
     subtitle =
-      paste0(
-        "Standardised trajectories under the fitted high/regular provisioning contrast. ",
-        "Density and cohort are held at their centred reference values; Matthew and random effects are set to zero."
-      ),
+      NULL,
 
     caption =
       paste0(
-        "Provisioning is a current site-year hazard multiplier in the fitted model. ",
-        "These fixed-state trajectories visualise that fitted association and do not imply cumulative carry-over or individual treatment effects."
+        "Provisioning is applied as the current site-year hazard multiplier fitted by the model. ",
+        "Annual survival is survival over the next year at each age; no lifelong exposure history is assumed. ",
+        "Density and cohort are held at reference values, with Matthew and random effects set to zero."
       )
   ) +
   theme_classic(
