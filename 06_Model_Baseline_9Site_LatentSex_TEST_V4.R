@@ -761,8 +761,7 @@ code_BASE <- nimbleCode({
           tMax,
           floor(
             tB[i]
-          ) +
-          1
+          )
         )
       )
 
