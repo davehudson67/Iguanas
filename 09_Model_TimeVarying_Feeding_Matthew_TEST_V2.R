@@ -1,51 +1,31 @@
 ## ============================================================
 ## 09_Model_TimeVarying_Feeding_Matthew_TEST_V2.R
 ##
-## CORRECTED NINE-SITE BASELINE SURVIVAL MODEL
-##
-## Purpose:
-##   Establish a clean biological baseline BEFORE adding calendar-
-##   varying provisioning, Hurricane Matthew, and male removals.
+## NINE-SITE TIME-VARYING SURVIVAL-RECAPTURE MODEL
 ##
 ## Survival:
-##   - continuous-age Gompertz hazard
-##   - correct left truncation at FIRST LIVE CAPTURE
-##   - age-10 reference parameterisation
-##   - partially observed / latent sex
+##   - continuous-age Gompertz hazard parameterised at age 10
+##   - left truncation at each individual's first live capture
+##   - latent / partially observed birth time and sex
 ##   - within-site birth-cohort density
-##   - linear birth-cohort effect
-##   - residual site effect on age-10 mortality
+##   - linear birth-cohort effect on age-10 mortality
+##   - residual centred site effect on age-10 mortality
+##   - calendar-varying high/regular provisioning
+##   - FFRC post-Matthew calendar indicator
+##   - centred site-specific calendar-time nuisance slopes
 ##
 ## Detection:
-##   - first capture excluded
-##   - subsequent actual site-year survey events only
-##   - sex
-##   - age, saturating at 15 y
-##   - residual site detection effect
-##   - residual survey-event detection effect
+##   - reconstructed field visits separated by >14-day gaps
+##   - first-capture event excluded; no pre-entry zeros
+##   - sex and age (saturating at age 15)
+##   - centred site and field-visit effects
 ##
-## Density:
-##   Primary baseline is deliberately conservative:
-##   only individuals whose ENTIRE possible birth interval lies
-##   within supported density years contribute to betaDENS.
-##
-##   Other individuals remain in the survival/detection model,
-##   but their density contribution is fixed to zero (= site mean).
-##
-## IMPORTANT:
-##   Provisioning, hurricane and removal terms are NOT added here.
-##   Those vary by CALENDAR YEAR and require the next time-varying
-##   hazard model. Adding them as static individual covariates here
-##   would be biologically wrong.
-##
-## Default RUN_MODE = TEST.
-##
-## To run longer later:
-##   Sys.setenv(RUN_MODE = "LONG")
-##   source("06_Model_Baseline_9Site_LatentSex_TEST.R")
+## NOTE:
+##   The final publishable individual-detection model is generated
+##   from this source by Build_IndivDetect_Model_Files.R, which adds
+##   persistent individual heterogeneity in detection without changing
+##   the survival model.
 ## ============================================================
-
-
 library(tidyverse)
 library(lubridate)
 library(nimble)
