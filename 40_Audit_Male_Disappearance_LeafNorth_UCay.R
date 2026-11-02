@@ -63,6 +63,12 @@ period_summary <- id_terminal %>%
   mutate(median_age_terminal = if_else(is.nan(median_age_terminal), NA_real_, median_age_terminal), median_svl_terminal = if_else(is.nan(median_svl_terminal), NA_real_, median_svl_terminal))
 write_csv(period_summary, file.path(out_dir, "Period_summary_site_sex.csv"))
 
+cat("\nMID-2000s TERMINAL-DISAPPEARANCE SUMMARY (2003-2007)\n")
+print(period_summary %>% filter(period == "2003-2007") %>% arrange(Island, sex), n = Inf)
+
+cat("\nFOCAL SITES: LEAF NORTH + U CAY, MALES\n")
+print(period_summary %>% filter(period == "2003-2007", Island %in% c("LeafNorth", "UCay"), sex == "M"), n = Inf)
+
 p1 <- terminal_rate %>%
   filter(CalYear <= 2017, sex %in% c("F", "M")) %>%
   ggplot(aes(CalYear, terminal_fraction, linetype = sex, group = sex)) +
