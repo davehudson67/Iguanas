@@ -63,11 +63,48 @@ period_summary <- id_terminal %>%
   mutate(median_age_terminal = if_else(is.nan(median_age_terminal), NA_real_, median_age_terminal), median_svl_terminal = if_else(is.nan(median_svl_terminal), NA_real_, median_svl_terminal))
 write_csv(period_summary, file.path(out_dir, "Period_summary_site_sex.csv"))
 
-cat("\nMID-2000s TERMINAL-DISAPPEARANCE SUMMARY (2003-2007)\n")
-print(period_summary %>% filter(period == "2003-2007") %>% arrange(Island, sex), n = Inf)
+## Correct denominator for the collaborator question:
+## among all individuals actually seen during 2003-2007, what fraction
+## had their final unexplained capture in that same period and were
+## never subsequently recaptured despite >=2 years of later monitoring?
+mid_ids <- live %>%
+  filter(CalYear >= 2003, CalYear <= 2007) %>%
+  distinct(ID_raw, Island) %>%
+  left_join(id_terminal %>% select(ID_raw, sex, last_year, unexplained_terminal, est_age_last, last_svl), by = "ID_raw") %>%
+  mutate(mid2000s_terminal = unexplained_terminal & last_year >= 2003 & last_year <= 2007)
 
-cat("\nFOCAL SITES: LEAF NORTH + U CAY, MALES\n")
-print(period_summary %>% filter(period == "2003-2007", Island %in% c("LeafNorth", "UCay"), sex == "M"), n = Inf)
+mid2000s_summary <- mid_ids %>%
+  filter(sex %in% c("F", "M")) %>%
+  group_by(Island, sex) %>%
+  summarise(
+    n_seen_2003_2007 = n_distinct(ID_raw),
+    n_terminal_2003_2007 = n_distinct(ID_raw[mid2000s_terminal]),
+    terminal_fraction = n_terminal_2003_2007 / n_seen_2003_2007,
+    median_age_terminal = median(est_age_last[mid2000s_terminal], na.rm = TRUE),
+    median_svl_terminal = median(last_svl[mid2000s_terminal], na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    median_age_terminal = if_else(is.nan(median_age_terminal), NA_real_, median_age_terminal),
+    median_svl_terminal = if_else(is.nan(median_svl_terminal), NA_real_, median_svl_terminal)
+  )
+
+mid2000s_contrast <- mid2000s_summary %>%
+  select(Island, sex, terminal_fraction) %>%
+  pivot_wider(names_from = sex, values_from = terminal_fraction, names_prefix = "fraction_") %>%
+  mutate(male_minus_female = fraction_M - fraction_F, male_female_ratio = fraction_M / fraction_F)
+
+write_csv(mid2000s_summary, file.path(out_dir, "Mid2000s_seen_denominator_summary.csv"))
+write_csv(mid2000s_contrast, file.path(out_dir, "Mid2000s_male_female_contrast.csv"))
+
+cat("\nMID-2000s DISAPPEARANCE AMONG ALL ANIMALS SEEN 2003-2007\n")
+print(mid2000s_summary %>% arrange(Island, sex), n = Inf)
+
+cat("\nMALE-FEMALE CONTRAST BY SITE\n")
+print(mid2000s_contrast %>% arrange(desc(male_minus_female)), n = Inf)
+
+cat("\nFOCAL SITES: LEAF NORTH + U CAY\n")
+print(mid2000s_summary %>% filter(Island %in% c("LeafNorth", "UCay")) %>% arrange(Island, sex), n = Inf)
 
 p1 <- terminal_rate %>%
   filter(CalYear <= 2017, sex %in% c("F", "M")) %>%
