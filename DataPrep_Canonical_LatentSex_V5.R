@@ -69,6 +69,15 @@ if(!file.exists(canonical_file)) {
 
 AllData_raw <- readRDS(canonical_file)
 
+## Optional site exclusion for pre-specified sensitivity analyses only.
+## Ordinary primary-model runs leave IGUANA_EXCLUDE_SITES unset and are unchanged.
+exclude_sites_env <- trimws(Sys.getenv("IGUANA_EXCLUDE_SITES", unset = ""))
+exclude_sites <- if(nzchar(exclude_sites_env)) trimws(strsplit(exclude_sites_env, ",", fixed = TRUE)[[1]]) else character(0)
+if(length(exclude_sites) > 0) {
+  message("SENSITIVITY SITE EXCLUSION: ", paste(exclude_sites, collapse = ", "))
+  AllData_raw <- AllData_raw %>% filter(!Site %in% exclude_sites)
+}
+
 required_columns <- c(
   "Site",
   "Species",
@@ -1519,17 +1528,8 @@ sex_state <- growth_info$sex_state
 ## 15. SPECIES AND ISLAND INDICES
 ## ============================================================
 
-ordered_islands <- c(
-  "Bitter",
-  "FFRC",
-  "Gaulin",
-  "LeafNorth",
-  "LeafSouth",
-  "NAdder",
-  "Noddy",
-  "UCay",
-  "WhiteB"
-)
+ordered_islands_all <- c("Bitter", "FFRC", "Gaulin", "LeafNorth", "LeafSouth", "NAdder", "Noddy", "UCay", "WhiteB")
+ordered_islands <- setdiff(ordered_islands_all, exclude_sites)
 
 if(
   !setequal(
