@@ -37,9 +37,10 @@ library(coda)
 ## 1. LOAD FROZEN DATA PREP
 ## ============================================================
 
-source(
-  "DataPrep_Canonical_LatentSex_V5.R"
-)
+## This sensitivity deliberately removes both populations implicated
+## in the historical large-male-removal concern.
+Sys.setenv(IGUANA_EXCLUDE_SITES = "LeafNorth,UCay")
+source("DataPrep_Canonical_LatentSex_V5.R")
 
 
 covariate_file <-
