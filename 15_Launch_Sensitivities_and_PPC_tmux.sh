@@ -52,7 +52,7 @@ if tmux has-session -t "${PPC_SESSION}" 2>/dev/null; then
   echo "${PPC_SESSION}: already exists; not starting duplicate."
 else
   tmux new-session -d -s "${PPC_SESSION}" \
-    "cd '${ROOT}' && N_PPC='${N_PPC}' PPC_CORES='${PPC_CORES}' Rscript 14_PosteriorPredictiveChecks_Primary.R 2>&1 | tee '${PPC_LOG}'"
+    "cd '${ROOT}' && N_PPC='${N_PPC}' PPC_CORES='${PPC_CORES}' Rscript 14_PosteriorPredictiveChecks_Primary_V2.R 2>&1 | tee '${PPC_LOG}'"
 
   echo "Started ${PPC_SESSION} -> ${PPC_LOG}"
 fi
