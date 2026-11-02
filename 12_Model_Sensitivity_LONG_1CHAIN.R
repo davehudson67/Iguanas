@@ -1,51 +1,31 @@
 ## ============================================================
 ## 12_Model_Sensitivity_LONG_1CHAIN.R
 ##
-## CORRECTED NINE-SITE BASELINE SURVIVAL MODEL
-##
-## Purpose:
-##   Establish a clean biological baseline BEFORE adding calendar-
-##   varying provisioning, Hurricane Matthew, and male removals.
+## NINE-SITE TIME-VARYING SURVIVAL-RECAPTURE MODEL
 ##
 ## Survival:
-##   - continuous-age Gompertz hazard
-##   - correct left truncation at FIRST LIVE CAPTURE
-##   - age-10 reference parameterisation
-##   - partially observed / latent sex
+##   - continuous-age Gompertz hazard parameterised at age 10
+##   - left truncation at each individual's first live capture
+##   - latent / partially observed birth time and sex
 ##   - within-site birth-cohort density
-##   - linear birth-cohort effect
-##   - residual site effect on age-10 mortality
+##   - linear birth-cohort effect on age-10 mortality
+##   - residual centred site effect on age-10 mortality
+##   - calendar-varying high/regular provisioning
+##   - FFRC post-Matthew calendar indicator
+##   - centred site-specific calendar-time nuisance slopes
 ##
 ## Detection:
-##   - first capture excluded
-##   - subsequent actual site-year survey events only
-##   - sex
-##   - age, saturating at 15 y
-##   - residual site detection effect
-##   - residual survey-event detection effect
+##   - reconstructed field visits separated by >14-day gaps
+##   - first-capture event excluded; no pre-entry zeros
+##   - sex and age (saturating at age 15)
+##   - centred site and field-visit effects
 ##
-## Density:
-##   Primary baseline is deliberately conservative:
-##   only individuals whose ENTIRE possible birth interval lies
-##   within supported density years contribute to betaDENS.
-##
-##   Other individuals remain in the survival/detection model,
-##   but their density contribution is fixed to zero (= site mean).
-##
-## IMPORTANT:
-##   Provisioning, hurricane and removal terms are NOT added here.
-##   Those vary by CALENDAR YEAR and require the next time-varying
-##   hazard model. Adding them as static individual covariates here
-##   would be biologically wrong.
-##
-## Default RUN_MODE = TEST.
-##
-## To run longer later:
-##   Sys.setenv(RUN_MODE = "LONG")
-##   source("06_Model_Baseline_9Site_LatentSex_TEST.R")
+## FINAL AUDITED SENSITIVITY MODEL:
+##   Includes persistent individual heterogeneity in detection.
+##   Built from the audited primary survival model after correction of
+##   the birth-year density index and equal-individual weighting in the
+##   SVL -> age calibration.
 ## ============================================================
-
-
 library(tidyverse)
 library(lubridate)
 library(nimble)
@@ -131,56 +111,6 @@ source(
 
 
 ## ============================================================
-## 2A. PRE-SPECIFIED SENSITIVITY VARIANT
-## ============================================================
-
-MODEL_VARIANT <- toupper(
-  Sys.getenv(
-    "MODEL_VARIANT",
-    "ANY_FEED"
-  )
-)
-
-
-valid_variants <- c(
-  "ANY_FEED",
-  "MATTHEW_ACUTE",
-  "DENSITY_PARTIAL"
-)
-
-
-if(
-  !MODEL_VARIANT %in%
-    valid_variants
-) {
-  stop(
-    "MODEL_VARIANT must be one of: ",
-    paste(
-      valid_variants,
-      collapse = ", "
-    )
-  )
-}
-
-
-variant_seed_offset <- switch(
-  MODEL_VARIANT,
-  ANY_FEED =
-    100000L,
-  MATTHEW_ACUTE =
-    200000L,
-  DENSITY_PARTIAL =
-    300000L
-)
-
-
-cat("\n")
-cat("============================================================\n")
-cat("SENSITIVITY VARIANT: ", MODEL_VARIANT, "\n", sep = "")
-cat("============================================================\n")
-
-
-## ============================================================
 ## 2B. LOAD FINAL CALENDAR EXPOSURES
 ##
 ## Primary feeding contrast:
@@ -189,9 +119,6 @@ cat("============================================================\n")
 ##
 ## Hurricane Matthew primary contrast:
 ##   FFRC 2017 onward = 1
-##
-## MATTHEW_ACUTE sensitivity:
-##   FFRC 2017-2018 = 1 (all 2016 FFRC surveys preceded Hurricane Matthew)
 ##
 ## Large-male removal is deliberately omitted.
 ## ============================================================
@@ -213,29 +140,27 @@ exposure_obj <- readRDS(
   exposure_file
 )
 
+MODEL_VARIANT <- toupper(Sys.getenv("MODEL_VARIANT", "ANY_FEED"))
+valid_variants <- c("ANY_FEED", "MATTHEW_ACUTE", "DENSITY_PARTIAL")
+if(!MODEL_VARIANT %in% valid_variants) stop("MODEL_VARIANT must be one of: ", paste(valid_variants, collapse = ", "))
+variant_seed_offset <- switch(MODEL_VARIANT, ANY_FEED = 100000L, MATTHEW_ACUTE = 200000L, DENSITY_PARTIAL = 300000L)
 
-## Keep the downstream model code unchanged by assigning the
-## selected sensitivity matrices to the same internal names used
-## by the primary model.
+cat("\n============================================================\n")
+cat("FINAL AUDITED SENSITIVITY VARIANT: ", MODEL_VARIANT, "\n", sep = "")
+cat("============================================================\n")
+
 feeding_high_matrix <- switch(
   MODEL_VARIANT,
-  ANY_FEED =
-    exposure_obj$feeding_any_matrix,
-  MATTHEW_ACUTE =
-    exposure_obj$feeding_high_matrix,
-  DENSITY_PARTIAL =
-    exposure_obj$feeding_high_matrix
+  ANY_FEED = exposure_obj$feeding_any_matrix,
+  MATTHEW_ACUTE = exposure_obj$feeding_high_matrix,
+  DENSITY_PARTIAL = exposure_obj$feeding_high_matrix
 )
-
 
 matthew_post_matrix <- switch(
   MODEL_VARIANT,
-  ANY_FEED =
-    exposure_obj$matthew_post_matrix,
-  MATTHEW_ACUTE =
-    exposure_obj$matthew_acute_matrix,
-  DENSITY_PARTIAL =
-    exposure_obj$matthew_post_matrix
+  ANY_FEED = exposure_obj$matthew_post_matrix,
+  MATTHEW_ACUTE = exposure_obj$matthew_acute_matrix,
+  DENSITY_PARTIAL = exposure_obj$matthew_post_matrix
 )
 
 
@@ -297,41 +222,11 @@ period_ref_year <- 2010
 ## ============================================================
 
 density_support_prop <- birth_density_support %>%
-  arrange(
-    ID
-  ) %>%
-  pull(
-    prop_density_supported
-  )
+  arrange(ID) %>%
+  pull(prop_density_supported)
 
-
-density_eligible <- if(
-  MODEL_VARIANT ==
-    "DENSITY_PARTIAL"
-) {
-
-  ## Less-conservative sensitivity:
-  ## any individual whose possible birth interval overlaps at least
-  ## one supported density year can contribute to the density effect.
-  ##
-  ## Candidate birth years outside observed density support retain
-  ## the Stage-5 site-mean centred value of zero. This is deliberately
-  ## NOT the primary analysis because it permits some density/birth
-  ## feedback; it is used only to test robustness of the primary
-  ## fully-supported-cohort result.
-  density_support_prop >
-    0
-
-} else {
-
-  density_support_prop ==
-    1
-}
-
-
-density_eligible <- as.integer(
-  density_eligible
-)
+density_eligible <- if(MODEL_VARIANT == "DENSITY_PARTIAL") density_support_prop > 0 else density_support_prop == 1
+density_eligible <- as.integer(density_eligible)
 
 
 stopifnot(
@@ -344,10 +239,10 @@ stopifnot(
 
 cat("\n")
 cat("============================================================\n")
-cat("DENSITY ELIGIBILITY FOR ", MODEL_VARIANT, "\n", sep = "")
+cat("DENSITY ELIGIBILITY FOR SENSITIVITY\n")
 cat("============================================================\n")
 cat(
-  "Individuals contributing to density effect under this variant: ",
+  "Fully supported individuals contributing to density effect: ",
   sum(
     density_eligible
   ),
@@ -1165,6 +1060,25 @@ code_BASE <- nimbleCode({
 
 
   ## ----------------------------------------------------------
+  ## PERSISTENT INDIVIDUAL DETECTION HETEROGENEITY
+  ## ----------------------------------------------------------
+
+  sigma_indiv_p ~ dunif(
+    0,
+    3
+  )
+
+  for(i in 1:nind) {
+
+    indiv_p_raw[i] ~ dnorm(
+      0,
+      sd =
+        1
+    )
+  }
+
+
+  ## ----------------------------------------------------------
   ## INDIVIDUAL LIFE HISTORIES
   ## ----------------------------------------------------------
 
@@ -1368,6 +1282,10 @@ code_BASE <- nimbleCode({
       ] +
       survey_p[
         obs_event[k]
+      ] +
+      sigma_indiv_p *
+      indiv_p_raw[
+        obs_ind[k]
       ]
 
 
@@ -1772,6 +1690,20 @@ make_inits <- function(
         n_events,
         0,
         0.3
+      ),
+
+    sigma_indiv_p =
+      runif(
+        1,
+        0.2,
+        0.8
+      ),
+
+    indiv_p_raw =
+      rnorm(
+        nind,
+        0,
+        0.3
       )
   )
 }
@@ -1903,6 +1835,7 @@ monitors_BASE <- c(
   "sigma_island_p",
   "island_p",
   "sigma_survey_p",
+  "sigma_indiv_p",
   latent_sex_nodes
 )
 
@@ -1975,7 +1908,8 @@ for(v in c(
   "sigma_site_period",
   "sigma_island_a",
   "sigma_island_p",
-  "sigma_survey_p"
+  "sigma_survey_p",
+  "sigma_indiv_p"
 )) {
 
   conf_BASE$removeSamplers(
@@ -2112,14 +2046,12 @@ if(
 }
 
 
-chain_seed <-
-  variant_seed_offset +
-  CHAIN_ID
+chain_seed <- 90000L + variant_seed_offset + CHAIN_ID
 
 
 cat("\n")
 cat("============================================================\n")
-cat("SENSITIVITY LONG SINGLE-CHAIN RUN: ", MODEL_VARIANT, "\n", sep = "")
+cat("FINAL AUDITED SENSITIVITY MODEL: LONG SINGLE-CHAIN RUN\n")
 cat("============================================================\n")
 cat(
   "Chain ID: ",
@@ -2248,14 +2180,7 @@ run_BASE <- runMCMC(
 ## combined.
 ## ============================================================
 
-out_dir <- file.path(
-  "ModelRuns",
-  paste0(
-    "Sensitivity_",
-    MODEL_VARIANT,
-    "_LONG"
-  )
-)
+out_dir <- file.path("ModelRuns", paste0("Sensitivity_", MODEL_VARIANT, "_AUDITED_LONG"))
 
 
 dir.create(
@@ -2293,9 +2218,7 @@ latent_lookup <- tibble(
 chain_file <- file.path(
   out_dir,
   paste0(
-    "Model_Sensitivity_",
-    MODEL_VARIANT,
-    "_LONG_CHAIN",
+    "Model_Sensitivity_", MODEL_VARIANT, "_AUDITED_LONG_CHAIN",
     CHAIN_ID,
     ".rds"
   )
@@ -2347,8 +2270,7 @@ names(analysis_hashes) <- names(hash_targets)
 
 saveRDS(
   list(
-    model_variant =
-      MODEL_VARIANT,
+    model_variant = MODEL_VARIANT,
 
     chain_id =
       CHAIN_ID,
@@ -2376,9 +2298,6 @@ saveRDS(
 
     density_eligible =
       density_eligible,
-
-    density_support_prop =
-      density_support_prop,
 
     birth_density_support =
       birth_density_support,
