@@ -46,7 +46,7 @@ run_dir <- file.path(
   paste0(
     "Sensitivity_",
     MODEL_VARIANT,
-    "_LONG"
+    "_AUDITED_LONG"
   )
 )
 
@@ -63,7 +63,7 @@ chain_files <- file.path(
   paste0(
     "Model_Sensitivity_",
     MODEL_VARIANT,
-    "_LONG_CHAIN",
+    "_AUDITED_LONG_CHAIN",
     chain_ids,
     ".rds"
   )
@@ -347,7 +347,8 @@ primary_parameters <- c(
   "betaP_SEX",
   "betaP_AGE",
   "sigma_island_p",
-  "sigma_survey_p"
+  "sigma_survey_p",
+  "sigma_indiv_p"
 )
 
 
@@ -638,7 +639,7 @@ out_dir <- file.path(
   paste0(
     "Sensitivity_",
     MODEL_VARIANT,
-    "_LONG"
+    "_AUDITED_LONG"
   )
 )
 
@@ -790,7 +791,7 @@ saveRDS(
   paste0(
     "Model_Sensitivity_",
     MODEL_VARIANT,
-    "_LONG_3CHAINS_COMPLETE.rds"
+    "_AUDITED_LONG_3CHAINS_COMPLETE.rds"
   )
 )
 
