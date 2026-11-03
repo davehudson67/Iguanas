@@ -37,13 +37,19 @@ library(coda)
 ## 1. LOAD FROZEN DATA PREP
 ## ============================================================
 
+omit_site_env <- Sys.getenv("OMIT_SITE", unset = "")
+valid_omit_sites_env <- c("Bitter", "FFRC", "Gaulin", "LeafNorth", "LeafSouth", "NAdder", "Noddy", "UCay", "WhiteB")
+if(!omit_site_env %in% valid_omit_sites_env) stop("OMIT_SITE must be one of: ", paste(valid_omit_sites_env, collapse = ", "))
+Sys.setenv(IGUANA_EXCLUDE_SITES = omit_site_env, IGUANA_FORCE_ORIGIN = "1945")
+source("DataPrep_Canonical_LatentSex_V5.R")
+
+## DataPrep intentionally clears the R workspace, so reconstruct the
+## LOO labels from the persistent environment variables afterwards.
 omit_site <- Sys.getenv("OMIT_SITE", unset = "")
 valid_omit_sites <- c("Bitter", "FFRC", "Gaulin", "LeafNorth", "LeafSouth", "NAdder", "Noddy", "UCay", "WhiteB")
-if(!omit_site %in% valid_omit_sites) stop("OMIT_SITE must be one of: ", paste(valid_omit_sites, collapse = ", "))
+if(!omit_site %in% valid_omit_sites) stop("OMIT_SITE lost or invalid after DataPrep.")
 omit_tag <- tolower(gsub("[^A-Za-z0-9]+", "", omit_site))
 omit_index <- match(omit_site, valid_omit_sites)
-Sys.setenv(IGUANA_EXCLUDE_SITES = omit_site)
-source("DataPrep_Canonical_LatentSex_V5.R")
 cat("\nLEAVE-ONE-SITE-OUT FIT: OMITTING ", omit_site, "\n", sep = "")
 
 
