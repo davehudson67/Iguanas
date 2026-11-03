@@ -40,7 +40,7 @@ library(coda)
 omit_site_env <- Sys.getenv("OMIT_SITE", unset = "")
 valid_omit_sites_env <- c("Bitter", "FFRC", "Gaulin", "LeafNorth", "LeafSouth", "NAdder", "Noddy", "UCay", "WhiteB")
 if(!omit_site_env %in% valid_omit_sites_env) stop("OMIT_SITE must be one of: ", paste(valid_omit_sites_env, collapse = ", "))
-Sys.setenv(IGUANA_EXCLUDE_SITES = omit_site_env, IGUANA_FORCE_ORIGIN = "1945")
+Sys.setenv(IGUANA_EXCLUDE_SITES = omit_site_env)
 source("DataPrep_Canonical_LatentSex_V5.R")
 
 ## DataPrep intentionally clears the R workspace, so reconstruct the
@@ -67,6 +67,20 @@ if(!file.exists(covariate_file)) {
 
 
 cov_obj <- readRDS(covariate_file)
+
+## Site exclusion can otherwise shift the dynamic model origin. Rebase the
+## adjusted time-scale objects to the frozen primary origin so that density
+## and calendar exposure columns retain exactly the same calendar meaning.
+if(Origin != cov_obj$Origin) {
+  message("Rebasing excluded-site fit from dynamic Origin ", Origin, " to frozen primary Origin ", cov_obj$Origin, ".")
+  Origin <- cov_obj$Origin
+  cintB_adj <- cintB_cal - Origin + 1
+  cintD_adj <- cintD_cal
+  cintD_adj[, 1] <- ifelse(cintD_cal[, 1] == 0, 0, cintD_cal[, 1] - Origin + 1)
+  cintD_adj[, 2] <- cintD_cal[, 2] - Origin + 1
+  tMax <- max(AllData$CalYear, na.rm = TRUE) - Origin + 1
+}
+
 site_keep <- match(ordered_islands, cov_obj$ordered_islands)
 if(anyNA(site_keep)) stop("Sensitivity sites do not match covariate object.")
 stopifnot(cov_obj$Origin == Origin, cov_obj$tMax == tMax)
