@@ -1668,11 +1668,7 @@ global_summary <- tibble(
         statistic,
         function(s) {
           median(
-            rep_stats[
-              [
-                s
-              ]
-            ]
+            rep_stats[[s]]
           )
         }
       ),
@@ -1716,11 +1712,7 @@ global_summary <- tibble(
         statistic,
         function(s) {
           mean(
-            rep_stats[
-              [
-                s
-              ]
-            ] >=
+            rep_stats[[s]] >=
               observed[
                 statistic ==
                   s
