@@ -1638,11 +1638,7 @@ rep_stats <- bind_rows(
     function(k) {
 
       as_tibble_row(
-        ppc_results[
-          [
-            k
-          ]
-        ]$stats
+        ppc_results[[k]]$stats
       ) %>%
         mutate(
           replicate =
