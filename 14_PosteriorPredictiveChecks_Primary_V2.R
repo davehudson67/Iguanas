@@ -1153,6 +1153,8 @@ site_counts <- function(
   )
 
 
+  out[is.na(out)] <- 0
+
   as.numeric(
     out
   )
@@ -1651,6 +1653,11 @@ rep_stats <- bind_rows(
 )
 
 
+if(any(!is.finite(as.matrix(rep_stats %>% select(-replicate))))) {
+  bad_cols <- names(rep_stats)[vapply(rep_stats, function(x) is.numeric(x) && any(!is.finite(x)), logical(1))]
+  stop("Non-finite values detected in replicated global PPC statistics: ", paste(bad_cols, collapse = ", "))
+}
+
 global_summary <- tibble(
   statistic =
     names(
@@ -1733,6 +1740,7 @@ site_rep_matrix <- do.call(
   )
 )
 
+if(any(!is.finite(site_rep_matrix))) stop("Non-finite values detected in replicated site counts.")
 
 colnames(
   site_rep_matrix
@@ -1813,6 +1821,8 @@ count_rep_matrix <- do.call(
   )
 )
 
+
+if(any(!is.finite(count_rep_matrix))) stop("Non-finite values detected in replicated detection-count categories.")
 
 count_category_summary <- tibble(
   category =
