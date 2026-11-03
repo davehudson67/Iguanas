@@ -1679,11 +1679,7 @@ global_summary <- tibble(
         function(s) {
           unname(
             quantile(
-              rep_stats[
-                [
-                  s
-                ]
-              ],
+              rep_stats[[s]],
               0.025
             )
           )
