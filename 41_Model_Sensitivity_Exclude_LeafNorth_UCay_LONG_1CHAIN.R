@@ -39,7 +39,7 @@ library(coda)
 
 ## This sensitivity deliberately removes both populations implicated
 ## in the historical large-male-removal concern.
-Sys.setenv(IGUANA_EXCLUDE_SITES = "LeafNorth,UCay")
+Sys.setenv(IGUANA_EXCLUDE_SITES = "LeafNorth,UCay", IGUANA_FORCE_ORIGIN = "1945")
 source("DataPrep_Canonical_LatentSex_V5.R")
 
 
