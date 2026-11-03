@@ -1367,21 +1367,12 @@ for(i in seq_len(nind)) {
 ## 12. DYNAMIC TIME ORIGIN
 ## ============================================================
 
-forced_origin_env <- trimws(Sys.getenv("IGUANA_FORCE_ORIGIN", unset = ""))
-
-Origin <- if(nzchar(forced_origin_env)) {
-  as.numeric(forced_origin_env)
-} else {
-  floor(
-    min(
-      cintB_cal[, 1],
-      na.rm = TRUE
-    )
+Origin <- floor(
+  min(
+    cintB_cal[, 1],
+    na.rm = TRUE
   )
-}
-
-if(!is.finite(Origin)) stop("Invalid model time origin.")
-if(nzchar(forced_origin_env)) message("FORCED MODEL ORIGIN: ", Origin)
+)
 
 cintB_adj <- cintB_cal -
   Origin +
