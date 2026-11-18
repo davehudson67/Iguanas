@@ -15,7 +15,10 @@ library(MCMCvis)
 MODEL_VARIANT <- toupper(
   Sys.getenv(
     "MODEL_VARIANT",
-    "ANY_FEED"
+    Sys.getenv(
+      "VARIANT",
+      "ANY_FEED"
+    )
   )
 )
 
@@ -801,6 +804,6 @@ cat("============================================================\n")
 cat("COMBINATION COMPLETE\n")
 cat("============================================================\n")
 cat("Saved:\n")
-cat("  Model_Sensitivity_", MODEL_VARIANT, "_LONG_3CHAINS_COMPLETE.rds\n", sep = "")
+cat("  Model_Sensitivity_", MODEL_VARIANT, "_AUDITED_LONG_3CHAINS_COMPLETE.rds\n", sep = "")
 cat("  ", out_dir, "/*.csv\n", sep = "")
 cat("============================================================\n")
