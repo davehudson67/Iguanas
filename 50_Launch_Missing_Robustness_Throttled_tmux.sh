@@ -42,7 +42,7 @@ for variant in ANY_FEED DENSITY_PARTIAL MATTHEW_ACUTE; do
   for chain in 1 2 3; do
     outfile="ModelRuns/Sensitivity_${variant}_AUDITED_LONG/Model_Sensitivity_${variant}_AUDITED_LONG_CHAIN${chain}.rds"
     start_if_missing "${outfile}" "iguana_${tag}_c${chain}" \
-      "VARIANT='${variant}' CHAIN_ID='${chain}' NITER='${NITER}' NBURN='${NBURN}' THIN='${THIN}' Rscript 12_Model_Sensitivity_LONG_1CHAIN.R" \
+      "MODEL_VARIANT='${variant}' CHAIN_ID='${chain}' NITER='${NITER}' NBURN='${NBURN}' THIN='${THIN}' Rscript 12_Model_Sensitivity_LONG_1CHAIN.R" \
       "logs/${tag}_chain${chain}.log"
   done
 done
