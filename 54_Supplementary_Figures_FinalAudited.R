@@ -135,7 +135,8 @@ density_file <- "DataAudits/ModelCovariates/01_Density_SiteYearModelTable.csv"
 if (file.exists(density_file)) {
   density <- read_csv(density_file, show_col_types = FALSE) %>%
     mutate(
-      observed = density_source == "observed_survey_year"
+      observed = density_source == "observed_survey_year",
+      density_within_z_model = if_else(density_source == "outside_observed_support_site_mean", NA_real_, density_within_z_model)
     )
 
   fig_s1 <- ggplot(
@@ -143,7 +144,7 @@ if (file.exists(density_file)) {
     aes(x = calendar_year, y = density_within_z_model)
   ) +
     geom_hline(yintercept = 0, colour = "grey75") +
-    geom_line(linewidth = 0.7) +
+    geom_line(linewidth = 0.7, na.rm = TRUE) +
     geom_point(
       data = density %>% filter(observed),
       size = 1.6
@@ -153,7 +154,7 @@ if (file.exists(density_file)) {
       x = "Calendar year",
       y = "Within-site density (SD)",
       title = "Observed and interpolated within-site density histories",
-      subtitle = "Points are observed survey years; lines between observations are interpolated. Outside observed support the model covariate is the site mean (0)."
+      subtitle = stringr::str_wrap("Points are observed survey years; lines between observations are interpolated. Gaps indicate unsupported years; the model uses zero there, not observed mean density.", width = 75)
     ) +
     base_theme
 
@@ -188,7 +189,7 @@ fig_s2 <- ggplot(survival_post, aes(x = median, y = label)) +
     x = "Posterior coefficient (model scale)",
     y = NULL,
     title = "Core survival-model coefficients",
-    subtitle = "Posterior median and 95% credible interval."
+    subtitle = stringr::str_wrap("Posterior median and 95% credible interval.", width = 75)
   ) +
   base_theme
 
@@ -221,7 +222,7 @@ fig_s3 <- ggplot(detection_post, aes(x = median, y = label)) +
     x = "Posterior parameter value",
     y = NULL,
     title = "Detection-model parameters",
-    subtitle = "The persistent individual detection SD is estimated alongside site and survey-event heterogeneity."
+    subtitle = stringr::str_wrap("The persistent individual detection SD is estimated alongside site and survey-event heterogeneity.", width = 75)
   ) +
   base_theme
 
@@ -243,7 +244,7 @@ if ("sigma_indiv_p" %in% colnames(primary)) {
       x = "Detection odds ratio for +1 SD individual effect",
       y = "Posterior density",
       title = "Persistent heterogeneity in individual detectability",
-      subtitle = "A one-SD increase in the individual random effect multiplies detection odds by exp(sigma_indiv_p)."
+      subtitle = stringr::str_wrap("A one-SD increase in the individual random effect multiplies detection odds by exp(sigma_indiv_p).", width = 75)
     ) +
     base_theme
 
@@ -254,14 +255,11 @@ if ("sigma_indiv_p" %in% colnames(primary)) {
 ## FIGURE S5. LATENT SEX POSTERIOR PROBABILITIES
 ## ============================================================
 
-sex_cols <- grep("^sex\\[[0-9]+\\]$", colnames(primary), value = TRUE)
-
-if (length(sex_cols) > 0) {
-  sex_prob <- tibble(
-    node = sex_cols,
-    p_male = colMeans(primary[, sex_cols, drop = FALSE])
-  )
-
+sex_prob <- read_csv("DataAudits/Final_IndivDetect_Audited/LongRun_LatentSexPosterior.csv", show_col_types = FALSE) %>%
+  transmute(p_male = Pr_male)
+stopifnot(nrow(sex_prob) == 290L, all(is.finite(sex_prob$p_male)),
+          all(sex_prob$p_male >= 0 & sex_prob$p_male <= 1))
+if (nrow(sex_prob) > 0) {
   fig_s5 <- ggplot(sex_prob, aes(x = p_male)) +
     geom_histogram(binwidth = 0.05, boundary = 0, closed = "left") +
     geom_vline(xintercept = 0.5, linetype = 2, colour = "grey50") +
@@ -269,7 +267,7 @@ if (length(sex_cols) > 0) {
       x = "Posterior probability male",
       y = "Latent-sex individuals",
       title = "Posterior resolution of latent sex",
-      subtitle = "Only sex nodes monitored as latent in the final model are shown."
+      subtitle = stringr::str_wrap("Only the 290 individuals with unresolved recorded sex are shown.", width = 75)
     ) +
     base_theme
 
@@ -353,7 +351,7 @@ if (n_distinct(robust$model) > 1) {
       x = "Posterior parameter value",
       y = NULL,
       title = "Robustness of core conclusions across pre-specified sensitivities",
-      subtitle = "The individual detection random effect is retained in every model."
+      subtitle = stringr::str_wrap("The individual detection random effect is retained in every model.", width = 75)
     ) +
     base_theme
 
@@ -463,14 +461,14 @@ if (file.exists(canonical_file)) {
       x = "Calendar year",
       y = NULL,
       title = "FFRC encounter support around Hurricane Matthew",
-      subtitle = paste0(
+      subtitle = stringr::str_wrap(paste0(
         "The dashed line marks Hurricane Matthew (October 2016). ",
         "All FFRC observations in 2016 preceded the storm."
-      ),
-      caption = paste0(
+      ), width = 75),
+      caption = stringr::str_wrap(paste0(
         "Annual encounter totals declined after 2016, but survey effort also declined sharply. ",
         "These descriptive counts are not estimates of abundance or survival."
-      )
+      ), width = 85)
     ) +
     base_theme +
     theme(
