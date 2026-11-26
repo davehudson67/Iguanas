@@ -34,11 +34,8 @@ dir.create(
 )
 
 N_DRAWS <- 4000L
-AGE_GRID <- seq(
-  0,
-  40,
-  by = 0.1
-)
+age_range <- read_csv("DataAudits/Final_AgeSupport/AgeSupport_DisplayRange.csv", show_col_types = FALSE)
+AGE_GRID <- seq(age_range$age_min, age_range$age_max, by = 0.1)
 
 ## ============================================================
 ## 1. LOAD POSTERIOR DRAWS
@@ -372,7 +369,7 @@ trajectory_one_scenario <- function(
       ),
 
     metric =
-      "Mortality hazard",
+      "Mortality hazard (year^-1)",
 
     sex =
       sex_label,
@@ -457,7 +454,7 @@ trajectories <- pmap_dfr(
         metric,
         levels =
           c(
-            "Mortality hazard",
+            "Mortality hazard (year^-1)",
             "Annual survival probability"
           )
       ),
@@ -581,11 +578,7 @@ trajectory_figure <- ggplot(
   ) +
   scale_x_continuous(
     breaks =
-      seq(
-        0,
-        40,
-        5
-      )
+      pretty(range(AGE_GRID), n = 7)
   ) +
   labs(
     x =
@@ -600,12 +593,11 @@ trajectory_figure <- ggplot(
     subtitle =
       NULL,
 
-    caption =
-      paste0(
+    caption = stringr::str_wrap(paste0(
         "Provisioning is applied as the current site-year hazard multiplier fitted by the model. ",
         "Annual survival is survival over the next year at each age; no lifelong exposure history is assumed. ",
         "Density and cohort are held at reference values, with Matthew and random effects set to zero."
-      )
+      ), width = 100)
   ) +
   theme_classic(
     base_size =
@@ -696,7 +688,7 @@ ggsave(
 age10_check <- trajectories %>%
   filter(
     metric ==
-      "Mortality hazard",
+      "Mortality hazard (year^-1)",
     abs(
       age -
         10
