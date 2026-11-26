@@ -1,5 +1,7 @@
 # Final iguana survival model: technical and plain-language explanation
 
+**Final audited version — 26 November 2026.** Supersedes the earlier individual-detection fit. Primary posterior: `Model_Final_IndivDetect_Audited_3CHAINS_COMPLETE.rds`.
+
 ## Purpose of this document
 
 This document describes the **final primary model** fitted to the nine-site Allen Cays rock iguana dataset through 2019. It explains both the statistical formulation and the biological meaning of each component.
@@ -31,7 +33,7 @@ The final cleaned dataset contained:
 - **290 individuals with latent sex**
   - 39 with conflicting recorded F/M assignments
   - 251 never assigned a sex
-- **2,117 individuals** whose entire possible birth interval was covered by the density history and therefore contributed to estimation of the primary birth-density effect
+- **2,114 individuals** whose entire possible birth interval was covered by the density history and therefore contributed to estimation of the primary birth-density effect
 - **170 reconstructed field-visit detection occasions** used after first capture
 - **64,195 post-entry individual × visit detection opportunities**
 
@@ -299,7 +301,7 @@ Because \(B_i\) is uncertain, the relevant density year can change during MCMC.
 
 The primary model allows the density coefficient to be informed only by individuals for whom **the entire possible birth interval** lies within years supported by the density history.
 
-There were 2,117 such individuals.
+There were 2,114 such individuals.
 
 For the other 2,035 animals:
 
@@ -737,7 +739,7 @@ g(a_{ie})
 \min\left(1,\frac{a_{ie}}{15}\right).
 \]
 
-Thus detection probability increases linearly with age up to 15 years and then plateaus.
+The age contribution to log-odds of detection increases linearly up to age 15 and then plateaus. Probability itself is not linear.
 
 Conditional on being alive:
 
@@ -752,7 +754,7 @@ Conditional on being alive:
 +
 u^{(p)}_{j(i)}
 +
-v^{(p)}_e.
+v^{(p)}_e + w_i.
 \]
 
 Here:
@@ -763,7 +765,7 @@ Here:
 - \(u^{(p)}_j\) = site detection effect
 - \(v^{(p)}_e\) = field-visit detection effect
 
-Both site and field-visit effects are centered random effects.
+Both site and field-visit effects are centered random effects. The persistent individual effect is uncentered: $w_i = \sigma_{\mathrm{indiv},p}\epsilon_i$, with $\epsilon_i\sim N(0,1)$. It accounts for repeated differences in catchability among individuals.
 
 ---
 
@@ -859,6 +861,14 @@ with:
 v^*_e\sim N(0,1).
 \]
 
+The final model additionally includes persistent individual detection heterogeneity:
+
+\[
+w_i=\sigma_{\mathrm{indiv},p}\epsilon_i,\qquad \epsilon_i\sim N(0,1),\qquad \sigma_{\mathrm{indiv},p}\sim U(0,3).
+\]
+
+This effect is constant across visits for a given individual, is not a survival frailty term, and is not centered across individuals.
+
 The field-visit random effect absorbs variation associated with the actual survey occasion, including unmeasured differences in effort, team composition, weather, animal aggregation and other visit-specific conditions.
 
 We deliberately did **not** use the number caught during a visit as an effort covariate, because capture count itself combines abundance and detectability.
@@ -947,7 +957,7 @@ The detection component is:
 +
 u^{(p)}_{j(i)}
 +
-v^{(p)}_e,
+v^{(p)}_e + w_i,
 \]
 
 \[
@@ -1046,7 +1056,8 @@ U(0,3),
 \[
 \sigma_{\mathrm{survey},p}
 \sim
-U(0,3).
+U(0,3),\qquad
+\sigma_{\mathrm{indiv},p}\sim U(0,3).
 \]
 
 ## Detection priors
@@ -1140,434 +1151,100 @@ The model was therefore considered sufficiently converged for substantive interp
 
 ---
 
-# 31. Main posterior estimates from the final primary run
+# 31. Final audited posterior estimates
 
-The following are posterior medians with 95% credible intervals unless otherwise stated.
+Posterior medians and 95% credible intervals from three chains, each with 150,000 iterations, 50,000 burn-in and thinning by 10 (30,000 retained draws in total).
 
 | Parameter | Median | 95% CrI |
 |---|---:|---:|
-| \(a_{10}\) | 0.0383 | 0.0268–0.0510 |
-| \(b\) | 0.0450 | 0.0313–0.0673 |
-| \(\beta_{\mathrm{sex},a}\) | -0.0699 | -0.258–0.118 |
-| \(\beta_{\mathrm{sex},b}\) | 0.685 | 0.451–0.982 |
-| \(\beta_{\mathrm{dens},a}\) | 0.371 | 0.236–0.513 |
-| \(\beta_{\mathrm{dens},b}\) | -0.322 | -0.471 to -0.173 |
-| \(\beta_{\mathrm{cohort}}\) | 0.0742 | -0.0564–0.317 |
-| \(\beta_F\) | 0.403 | -0.047–0.875 |
-| \(\beta_M\) | -0.383 | -1.70–0.797 |
-| \(\sigma_{\mathrm{period}}\) | 0.163 | 0.0124–0.586 |
-| \(\sigma_{\mathrm{island},a}\) | 0.267 | 0.0967–0.615 |
-| \(\alpha_p\) | -2.75 | -2.98 to -2.53 |
-| \(\beta_{p,\mathrm{sex}}\) | 0.322 | 0.254–0.390 |
-| \(\beta_{p,\mathrm{age}}\) | 1.39 | 1.23–1.55 |
-| \(\sigma_{\mathrm{island},p}\) | 0.683 | 0.282–1.47 |
-| \(\sigma_{\mathrm{survey},p}\) | 1.37 | 1.21–1.56 |
+| Reference age-10 hazard | 0.0232 | 0.0149–0.0329 |
+| Reference Gompertz rate | 0.0572 | 0.0408–0.0840 |
+| Male effect on log age-10 hazard | 0.033 | −0.182–0.241 |
+| Male effect on log Gompertz rate | 0.554 | 0.344–0.820 |
+| Density effect on log age-10 hazard | 0.300 | 0.154–0.449 |
+| Density effect on log Gompertz rate | −0.240 | −0.367–−0.104 |
+| Birth cohort coefficient | 0.074 | −0.072–0.361 |
+| High/regular provisioning log HR | 0.649 | 0.146–1.12 |
+| Matthew log HR | −0.123 | −1.43–1.11 |
+| Persistent individual detection SD | 1.11 | 1.04–1.19 |
 
----
+The complete parameter table, including detection and site-level nuisance parameters, is generated by script 38 in DataAudits/Final_IndivDetect_Audited/LongRun_PrimarySummary.csv. This file is the authoritative numerical source for all parameters not reproduced above.
 
-# 32. Interpretation of the sex effect
+# 32. Biological interpretation
 
-The age-10 sex coefficient is close to zero:
+## Sex
+
+The primary model provides little evidence of a difference at age 10 (male:female reference hazard ratio about 1.03). The male Gompertz rate is about 1.74 times the female rate (95% CrI 1.41–2.27). This is a ratio of rates of increase in log hazard, not an age-independent hazard ratio. At equal covariate values the age-specific male:female hazard ratio is
 
 \[
-\beta_{\mathrm{sex},a}
-\approx -0.07.
+\exp\{\beta_{\mathrm{sex},a}+b_f[\exp(\beta_{\mathrm{sex},b})-1](a-10)\}.
 \]
 
-Thus there is little evidence that males and females differ strongly in mortality around age 10.
+Derived age-specific intervals should be calculated using joint posterior draws, not independent marginal quantiles.
 
-However:
+## Birth-period density
 
-\[
-\beta_{\mathrm{sex},b}
-\approx 0.685,
-\]
+A one-SD increase in supported within-site birth density is associated with 1.35 times the age-10 mortality hazard (1.17–1.57) and 0.79 times the Gompertz rate (0.69–0.90). Higher density is thus associated with higher reference adult mortality but slower subsequent mortality acceleration. This is not a constant survival advantage or disadvantage across ages. The density index is MNA-derived, not an experimental treatment.
 
-so the male senescence parameter is approximately:
+## Provisioning
 
-\[
-e^{0.685}
-\approx
-1.98
-\]
+High/regular provisioning versus other site-years: HR 1.91 (1.16–3.07), posterior probability HR > 1 = 0.990. This is an instantaneous calendar-specific hazard multiplier, not a cumulative lifetime treatment or a causal estimate. Site-specific temporal slopes help account for confounding but cannot eliminate it. Much of the within-site onset contrast comes from Bitter and Leaf South.
 
-times the female value for otherwise equivalent reference animals.
+## Hurricane Matthew and cohort
 
-This produces increasingly divergent mortality with age.
+The FFRC post-2016 HR is 0.884 (0.240–3.05). The acute 2017–2018 HR is 0.904 (0.220–3.12). Neither establishes a mortality increase or decrease, nor do they establish absence of an effect. The birth-cohort coefficient also spans zero.
 
-Using posterior-median reference values, the approximate male:female hazard ratios are:
+## Detection
 
-| Age | Male:female hazard ratio |
-|---:|---:|
-| 10 | 0.93 |
-| 12 | 1.02 |
-| 20 | 1.45 |
-| 30 | 2.26 |
-| 40 | 3.52 |
+The individual detection SD of 1.11 corresponds to an odds multiplier of about 3.03 for a one-SD increase in persistent individual catchability, conditional on other detection covariates and survival. This is not a multiplier of mortality hazard.
 
-### Plain-language interpretation
+# 33. Completed validation and sensitivity analyses
 
-The primary sex signal is not that males simply have higher mortality throughout adulthood.
+All 14 combined fits (primary, three model-specification sensitivities, targeted two-site exclusion, nine leave-one-site-out fits) have no monitored Rhat above 1.05; maxima range from 1.02 to 1.05. This is a diagnostic threshold, not proof of perfect mixing.
 
-Instead, males and females have similar mortality around early adulthood, but **male mortality accelerates more rapidly with age**.
+| Analysis | Male log Gompertz-rate ratio (95% CrI) | Provisioning HR (95% CrI) |
+|---|---|---|
+| Primary | 0.554 (0.344, 0.820) | 1.91 (1.16, 3.07) |
+| Any provisioning vs none | 0.542 (0.334, 0.801) | 1.85 (0.897, 3.31) |
+| Partial density support | 0.511 (0.311, 0.751) | 1.90 (1.14, 3.16) |
+| Acute Matthew | 0.558 (0.343, 0.829) | 1.90 (1.15, 3.07) |
+| Exclude Leaf North + U Cay | −0.105 (−0.737, 0.479) | 2.20 (0.884, 4.32) |
+| Nine individual site omissions | medians 0.497–0.614; all intervals above zero | medians 1.68–2.44 |
 
-This is evidence for faster actuarial senescence in males.
+All individual site omissions retain a positive male rate effect with credible intervals excluding zero. However, excluding Leaf North and U Cay together changes the decomposition: male age-10 log HR is 1.063 (0.443, 1.734), while the rate effect is uncertain. This supports higher male hazard at the reference age in the reduced dataset, not a universal age-independent male mortality difference. The joint exclusion does not distinguish loss of information from genuine population heterogeneity or human removal.
 
----
+Both density coefficients retain their directions in all nine single-site omissions, but both intervals include zero without Leaf North. The two-site exclusion retains a positive age-10 density effect but its rate effect is uncertain. Partial density support retains both effects with intervals excluding zero.
 
-# 33. Interpretation of birth density
+Provisioning posterior probabilities of increased hazard range from 0.949 to 0.999 across all fits; several intervals include one. The any-provisioning contrast differs from the primary contrast. Omission of FFRC removes the only Matthew-exposed population, so its Matthew coefficient is not informed by exposure data and is omitted from the supplementary table.
 
-For a one-standard-deviation increase in the supported within-site birth-density covariate:
+## Unexplained male disappearances
 
-\[
-e^{\beta_{\mathrm{dens},a}}
-=
-e^{0.371}
-\approx
-1.45.
-\]
+The descriptive audit of animals seen during 2003–2007 found subsequent disappearance proportions of 81/224 males versus 70/222 females at Leaf North and 40/87 males versus 41/106 females at U Cay. Male excesses were modest and similar to Gaulin (36/81 versus 20/53). Disappearance is not confirmed mortality or confirmed removal. No human-removal covariate was fitted because a defensible site-year exposure history was unavailable. Permanent removal/emigration cannot be separated reliably from death by these histories alone.
 
-Thus age-10 mortality is approximately 45% higher at the reference age.
+## Posterior predictive checks
 
-At the same time:
+The PPC used 1,000 replicates for 961 known-age, resolved-sex individuals (21,508 post-entry opportunities). Total observed detections were 4,141 versus predicted median 3,518 (95% predictive interval 2,777–4,321). The model underpredicted individuals with recapture spans of at least five years (625 observed versus 550 predicted, 505–591) and ten years (401 versus 330, 289–368). U Cay detections were also underpredicted (1,320 versus 942, 670–1,239). These are meaningful limitations of fit, not eliminated by the sensitivity analyses. The stability of coefficients when U Cay is omitted is reassuring but does not prove that observation-model misspecification is irrelevant.
 
-\[
-e^{\beta_{\mathrm{dens},b}}
-=
-e^{-0.322}
-\approx
-0.72.
-\]
+# 34. Interpretation limits and reporting conventions
 
-Thus the Gompertz senescence parameter is lower.
+- The likelihood conditions on survival to first live capture. It does not independently identify juvenile or pre-entry survival.
+- The Gompertz form assumes exponential age dependence; predictions beyond supported ages are extrapolations.
+- A hazard is not an annual death probability. Annual survival is obtained by integrating the hazard over the next year. A fixed provisioning scenario is a standardized contrast, not an observed lifelong exposure.
+- Site-level calendar exposures are observational. Individual feeding, permanent emigration and removal are not independently observed.
+- Age calibration and density reconstruction are imperfect; latent birth windows propagate uncertainty within the assumed bounds, not every possible calibration error.
+- Detection random effects accommodate heterogeneity but the PPC shows remaining discrepancies.
+- The nine omission fits overlap extensively and are influence analyses, not independent replications.
 
-### Plain-language interpretation
+# 35. Suggested manuscript Methods
 
-Individuals associated with higher-density birth periods show a combination of:
+We fitted a Bayesian hierarchical survival–recapture model in NIMBLE. Age-specific mortality followed a Gompertz hazard parameterized at age 10, with latent birth times constrained by empirically derived birth intervals. Survival was left-truncated at each individual's first live capture, retaining biological age. Sex and supported within-site birth density affected both age-10 mortality and the Gompertz rate; birth cohort and centered site effects affected age-10 mortality. High/regular provisioning, the FFRC post-2016 period and centered site-specific calendar slopes modified the hazard over calendar time. Death times were interval- or right-censored. Sex was latent for conflicting or missing assignments. Detection was modeled at reconstructed field visits (capture bouts separated by more than 14 days), using sex, an age score saturating at 15, centered site and visit random effects, and a persistent individual normal random effect. Detection was conditional on latent survival, and entry and pre-entry opportunities were excluded. Three independent chains of 150,000 iterations were run with 50,000 burn-in and thinning by 10.
 
-- higher mortality around age 10
-- slower subsequent acceleration of mortality
+# 36. Reproducibility and authoritative outputs
 
-Because density affects both \(a_{10}\) and \(b\), there is no single density hazard ratio that applies at every age.
-
-This pattern should not yet be assigned a mechanism. The primary density analysis intentionally uses only fully supported birth windows, and a less-conservative density-support sensitivity analysis is being run.
-
----
-
-# 34. Interpretation of provisioning
-
-The final primary estimate was:
-
-\[
-\mathrm{HR}_{\mathrm{high\ provisioning}}
-=
-e^{\beta_F}
-\approx
-1.50.
-\]
-
-The 95% credible interval was:
-
-\[
-0.954\text{–}2.40.
-\]
-
-The posterior probability that the hazard ratio exceeds 1 was:
-
-\[
-P(\mathrm{HR}>1)=0.964.
-\]
-
-### Plain-language interpretation
-
-The model assigns approximately a **96% posterior probability that mortality hazard is higher during periods of high/regular provisioning**, with a posterior median corresponding to about a **50% higher instantaneous hazard**.
-
-The central 95% credible interval still slightly overlaps 1, so the result is better described as strong posterior evidence for a positive association than as a definitive fixed 50% increase.
-
-The inference is also not equivalent to a randomized feeding experiment.
-
-The strongest within-site before/after information comes from Bitter, with additional but weaker transition information from Leaf South, while Leaf North and U Cay contribute high-provisioning populations without an observed within-study transition.
-
----
-
-# 35. Interpretation of the Matthew term
-
-For FFRC after 2016:
-
-\[
-\mathrm{HR}_{\mathrm{Matthew}}
-\approx
-0.68
-\]
-
-with a very wide 95% credible interval:
-
-\[
-0.18\text{–}2.22.
-\]
-
-The posterior probability of an increase in mortality was only approximately:
-
-\[
-P(\mathrm{HR}>1)=0.279.
-\]
-
-### Plain-language interpretation
-
-The available data do not provide a precise estimate of a post-Matthew mortality effect.
-
-The coefficient is retained as an adjustment for an important known disturbance, but it should not be interpreted as evidence that Matthew reduced mortality or as a clean causal estimate of hurricane impact.
-
----
-
-# 36. Interpretation of birth cohort
-
-The posterior for the residual birth-cohort effect overlapped zero:
-
-\[
-\beta_{\mathrm{cohort}}
-=
-0.074
-\quad
-(95\%\,\mathrm{CrI}\approx -0.056,\ 0.317).
-\]
-
-Thus there is no strong residual evidence that individuals born in later decades have systematically higher or lower mortality after accounting for density, sex, site and the other modeled components.
-
----
-
-# 37. Interpretation of detection
-
-The fitted detection model showed:
-
-\[
-\beta_{p,\mathrm{sex}}
-\approx
-0.322,
-\]
-
-so males had higher detection odds than females:
-
-\[
-e^{0.322}
-\approx
-1.38.
-\]
-
-The age effect was strongly positive:
-
-\[
-\beta_{p,\mathrm{age}}
-\approx
-1.39.
-\]
-
-Detection therefore increases substantially from young animals to age 15, after which the modeled age effect plateaus.
-
-There is also substantial variation among field visits:
-
-\[
-\sigma_{\mathrm{survey},p}
-\approx
-1.37.
-\]
-
-### Plain-language interpretation
-
-Capture probability is far from constant.
-
-It varies with sex, age, island and the particular field visit. Explicitly modeling this heterogeneity prevents variation in field conditions or animal catchability from being mistaken for mortality.
-
----
-
-# 38. What the model does **not** claim
-
-The model does **not** assume that:
-
-- every unseen animal is dead
-- first capture is birth
-- all individuals were the same age when entering the study
-- provisioning is a fixed individual trait
-- all sites have identical baseline mortality
-- all field visits have equal detectability
-- density is known for birth years outside observed support
-- high provisioning was experimentally randomized among islands
-- Hurricane Matthew is a controlled natural experiment
-- targeted removal of large males can be estimated from these data
-
-The large-male-removal effect was deliberately omitted because the available documentary evidence was not strong enough to construct a defensible site × year exposure history.
-
----
-
-# 39. Strengths of the final formulation
-
-The main advances over the earlier analysis are:
-
-### Correct biological age under delayed entry
-
-The Gompertz ageing clock is no longer restarted at first capture.
-
-### Explicit uncertainty in birth year
-
-Age uncertainty propagates through the survival likelihood rather than being replaced by a single age estimate.
-
-### Separate mortality level and senescence effects
-
-Sex and density can influence \(a_{10}\) and \(b\) independently.
-
-### Calendar-varying provisioning
-
-An animal's exposure can change through its lifetime rather than being assigned permanently as "fed" or "unfed".
-
-### Protection against temporal confounding
-
-Centered site-specific period slopes allow unrelated temporal drift instead of forcing all before/after changes into the provisioning coefficient.
-
-### Explicit detection process
-
-Survival and recapture are modeled jointly.
-
-### Actual field-visit occasions
-
-Distinct field trips separated by long gaps are no longer collapsed into one annual occasion.
-
-### Conservative density support
-
-The primary density effect is estimated only where the possible birth interval is fully supported by the density history.
-
----
-
-# 40. Remaining assumptions and limitations
-
-## Gompertz form
-
-The model assumes that, conditional on covariates, adult mortality follows an exponential Gompertz age trajectory.
-
-## Proportional calendar effects
-
-Provisioning, Matthew and residual site-period effects act multiplicatively on the hazard. The primary model does not allow the provisioning effect itself to vary with age or sex.
-
-## Site-level provisioning exposure
-
-Provisioning is represented at site × year level. Individual feeding behavior and within-site spatial exposure are not directly modeled.
-
-## Pre-entry survival is conditioned away
-
-The model estimates mortality after first capture. It cannot use animals that died before ever being observed, and it does not estimate how provisioning before first capture affected the probability of entering the sample.
-
-## Density reconstruction
-
-Density is derived from MNA histories rather than a perfect census and is incompletely supported in early historical periods.
-
-## Growth calibration transfer
-
-Reliable known-age calibration is concentrated in the northern *inornata* populations. Applying the resulting age-size information to *figginsi* therefore entails a transferability assumption that should be examined in sensitivity analysis.
-
-## Detection simplification
-
-The age effect on detection is linear to age 15 and flat thereafter. More complex age or seasonal detection structures are possible, but were not included in the primary model.
-
----
-
-# 41. Validation and sensitivity analyses
-
-The primary model is now frozen.
-
-The following analyses are intended to assess robustness rather than to search for a preferred result:
-
-1. **Any provisioning vs none**  
-   Replace the primary high/regular-versus-other exposure with any provisioning versus no provisioning.
-
-2. **Acute Matthew period**  
-   Replace FFRC post-2016 with an acute 2016–2018 disturbance window.
-
-3. **Partial density support**  
-   Relax the requirement that the entire birth interval has density support.
-
-4. **Growth/birth-window sensitivity**  
-   Examine the assumption that the northern known-age SVL relationship can be transferred to the southern *figginsi* populations.
-
-5. **Posterior predictive checks**  
-   Test whether replicated datasets generated from the fitted model reproduce important features of the observed recapture histories.
-
-These are validation analyses. The primary model specification is not being altered in response to whether those alternatives produce a more desirable result.
-
----
-
-# 42. Short lay summary
-
-We followed more than four thousand iguanas whose exact ages and death dates were often uncertain. The model allows each animal to have an uncertain birth date and asks how its risk of death changes as it ages.
-
-Mortality is modeled using a Gompertz curve, meaning that the risk of death can rise increasingly rapidly at older ages. Crucially, this curve is tied to the animal's true age rather than to the number of years since it was first caught.
-
-The model also recognizes that we do not catch every living iguana on every field trip. It separately estimates capture probability using the animal's sex and age, the island, and the particular field visit.
-
-Sex and density around birth can alter both mortality in early adulthood and how quickly mortality accelerates later in life. Provisioning is treated differently: it changes through calendar time. If an animal lived on an island before and after high-intensity feeding began, the model treats it as unexposed before the change and exposed afterwards.
-
-The final analysis suggests that males do not have markedly greater mortality around age 10, but their mortality rises much faster as they age. Higher density around birth is associated with higher mortality around age 10 but slower subsequent senescence. There is also substantial posterior support for higher mortality during high/regular provisioning periods: the median estimated hazard was about 1.5 times that during other periods, although uncertainty remains and the analysis is observational rather than experimental.
-
----
-
-# 43. Suggested concise Methods description
-
-> We fitted a Bayesian hierarchical survival–recapture model in NIMBLE. Age-specific mortality followed a Gompertz hazard parameterized at age 10, with individual birth times treated as latent within empirically derived birth intervals. The survival distribution was correctly left-truncated at each individual's age at first capture, thereby conditioning the likelihood on survival to study entry without resetting the Gompertz age scale. Sex and within-site density at the inferred birth year were allowed to affect both age-10 mortality and the Gompertz senescence parameter, while birth cohort and a centered site random effect affected age-10 mortality. Calendar-varying high/regular provisioning and the FFRC post-2016 period entered as proportional-hazard multipliers, alongside centered site-specific temporal slopes. Detection was modeled separately on reconstructed field visits, defined by gaps of >14 days between capture bouts, using sex, an age effect increasing to age 15, centered site effects and centered field-visit random effects. First-capture occasions and all pre-entry non-detections were excluded from the detection likelihood. Death times were interval- or right-censored as appropriate, and sex was treated as latent for individuals with conflicting or absent sex assignments. Three independent MCMC chains of 150,000 iterations were run, with 50,000 burn-in iterations and thinning by 10.
-
----
-
-# 44. Suggested concise provisioning interpretation
-
-> High/regular provisioning was associated with a posterior median mortality hazard ratio of 1.50 relative to other site-years (95% CrI 0.95–2.40), with a 0.964 posterior probability that the hazard ratio exceeded one. Because provisioning was modeled as a site- and calendar-specific exposure, individuals could move from unexposed to exposed periods as provisioning histories changed. The estimate should nevertheless be interpreted as an observational association rather than a randomized treatment effect, particularly because much of the within-site temporal contrast is provided by Bitter and, to a lesser extent, Leaf South.
-
----
-
-# 45. Conceptual takeaway
-
-The final model separates four processes that were previously easier to conflate:
-
-\[
-\boxed{
-\text{biological ageing}
-+
-\text{fixed individual history}
-+
-\text{calendar-varying environment}
-+
-\text{observation process}
-}
-\]
-
-Specifically:
-
-\[
-\boxed{
-\text{Gompertz age trajectory}
-}
-\]
-
-captures ageing;
-
-\[
-\boxed{
-\text{sex + birth density + birth cohort + site}
-}
-\]
-
-capture fixed or early-life differences;
-
-\[
-\boxed{
-\text{provisioning + Matthew + site temporal deviation}
-}
-\]
-
-capture calendar-varying mortality conditions; and
-
-\[
-\boxed{
-\text{sex + age + site + field visit}
-}
-\]
-
-capture the probability of observing a living animal.
-
-That separation is the central statistical and biological rationale of the final analysis.
+- Primary fit: scripts 37 and 38; Model_Final_IndivDetect_Audited_3CHAINS_COMPLETE.rds.
+- Sensitivity fits: scripts 12–13; exclusion and LOO: scripts 40–48.
+- PPC: script 14; DataAudits/PosteriorPredictive_Primary/.
+- Robustness synthesis: scripts 51–52; DataAudits/Final_Robustness/ and Figures/Final_Robustness/.
+- Final manuscript and supplementary plots: scripts 53–55; Figures/FinalAudited/.
+- Earlier model versions and plotting scripts remain historical and must not be used as numerical sources for the final paper.
+- Final figure rendering, age-range support, exact manuscript wording and any lifespan calculations still require publication-stage verification.
