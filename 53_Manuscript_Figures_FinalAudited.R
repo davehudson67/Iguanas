@@ -308,8 +308,8 @@ fig1 <- ggplot(
     x = "Calendar year",
     y = NULL,
     title = "Study populations and site-level provisioning history",
-    subtitle = "Black ticks mark years with field monitoring; exposure is a site-by-calendar-year history, not an individual treatment.",
-    caption = "Primary exposure contrasts high/regular provisioning against all other periods."
+    subtitle = stringr::str_wrap("Black ticks mark years with field monitoring; exposure is a site-by-calendar-year history, not an individual treatment.", width = 75),
+    caption = stringr::str_wrap("Primary exposure contrasts high/regular provisioning against all other periods.", width = 85)
   ) +
   base_theme +
   theme(
@@ -325,7 +325,8 @@ save_figure(fig1, "Figure_1_ExposureHistory", width = 7.6, height = 5.2)
 ## no Matthew effect, average site/time random effects.
 ## ============================================================
 
-ages <- seq(2, 50, by = 0.5)
+age_range <- read_csv("DataAudits/Final_AgeSupport/AgeSupport_DisplayRange.csv", show_col_types = FALSE)
+ages <- seq(age_range$age_min, age_range$age_max, by = 0.5)
 
 sex_curve <- map_dfr(
   c(Female = 0, Male = 1),
@@ -370,11 +371,11 @@ fig2 <- ggplot(
   scale_y_log10() +
   labs(
     x = "Age (years)",
-    y = "Annual mortality hazard (log scale)",
+    y = "Mortality hazard (year^-1; log scale)",
     colour = "Sex",
     fill = "Sex",
     title = "Sex-specific actuarial ageing trajectories",
-    subtitle = "Posterior median and 95% credible interval at reference density and calendar conditions."
+    subtitle = stringr::str_wrap("Posterior median and 95% credible interval at reference density and calendar conditions.", width = 75)
   ) +
   base_theme +
   theme(legend.position = "bottom")
@@ -461,7 +462,7 @@ fig3 <- ggplot(
     x = "Mortality hazard ratio associated with provisioning",
     y = NULL,
     title = "Provisioning association across the primary model and sensitivities",
-    subtitle = "Posterior median and 95% credible interval; HR > 1 indicates higher mortality hazard during the specified provisioning exposure."
+    subtitle = stringr::str_wrap("Posterior median and 95% credible interval; HR > 1 indicates higher mortality hazard during the specified provisioning exposure.", width = 75)
   ) +
   base_theme +
   theme(
@@ -539,11 +540,11 @@ fig4 <- ggplot(
   scale_y_log10() +
   labs(
     x = "Age (years)",
-    y = "Annual mortality hazard (log scale)",
+    y = "Mortality hazard (year^-1; log scale)",
     colour = "Birth-period density",
     fill = "Birth-period density",
     title = "Within-site cohort density is associated with mortality pace",
-    subtitle = "Female reference trajectories: higher supported birth-period density shifts age-10 mortality upward but senescence acceleration downward."
+    subtitle = stringr::str_wrap("Female reference trajectories: higher supported birth-period density shifts age-10 mortality upward but senescence acceleration downward.", width = 75)
   ) +
   base_theme +
   theme(legend.position = "bottom")
