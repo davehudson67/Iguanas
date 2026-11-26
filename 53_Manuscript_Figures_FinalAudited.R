@@ -284,7 +284,7 @@ fig1 <- ggplot(
   exposure_years,
   aes(x = calendar_year, y = Site, fill = state)
 ) +
-  geom_tile(height = 0.72, width = 1.02) +
+  geom_tile(height = 0.72, width = 1.00) +
   geom_point(
     data = monitor_years,
     aes(x = calendar_year, y = Site),
